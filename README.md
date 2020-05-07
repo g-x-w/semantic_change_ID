@@ -12,7 +12,6 @@ and is formatted as a JSON lines file.
 
 An example of one of the unwrapped source lines:
 
-    '''
     {
     'author': {'avatar_url': None, 'id': 973106, 'name': 'Gavin Evans'}, 
 
@@ -53,4 +52,3 @@ An example of one of the unwrapped source lines:
 
     'words_count': 218
     }
-    '''
