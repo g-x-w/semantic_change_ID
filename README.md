@@ -8,9 +8,7 @@ Currently looking at using a dataset of primary sources to track frequency of ta
 
 https://blog.aylien.com/free-coronavirus-news-dataset/
 
-and is formatted as a JSON lines file.
-
-An example of one of the unwrapped source lines:
+and is formatted as a JSON lines file. An example of one of the unwrapped source lines:
 
     {
     'author': {'avatar_url': None, 'id': 973106, 'name': 'Gavin Evans'}, 
