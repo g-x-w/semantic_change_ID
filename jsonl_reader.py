@@ -7,9 +7,8 @@ lines = []
 
 with open('aylien_data.jsonl') as datastream:
     for i in range(30):
-        lines.append(datastream.readline())
+        lines.append(datastream.readline())     # unwraps 30 lines of the JSONL datafile and appends to list as python dictionary object
 
-print("\n\n",json.loads(lines[0]))
-print("\n",json.loads(lines[0]).keys())
-# print("\n", (json.loads(lines[8])['published_at']))
+print("\n\n",json.loads(lines[0]))      # prints first dictionary
+print("\n",json.loads(lines[0]).keys())     # shows all keys in dictionary 
 print('\n\nDONE')
