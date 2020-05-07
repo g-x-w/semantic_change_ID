@@ -12,7 +12,8 @@ and is formatted as a JSON lines file.
 
 An example of one of the unwrapped source lines:
 
-{
+    '''
+    {
     'author': {'avatar_url': None, 'id': 973106, 'name': 'Gavin Evans'}, 
 
     'body': 'On Sunday, British Prime Minister Boris Johnson was hospitalized "for tests" because of "persistent" COVID-19 symptoms\xa010 days\xa0after he tested positive, CNN reports.\xa0\nJohnson reportedly went to the unspecified London hospital after his doctor advised him to do so. A press release from his office called the\xa0move\xa0"precautionary."\xa0\nOn March 26, Johnson revealed he had tested positive and that he had been dealing with symptoms since that date. Britain had gone into lockdown two days earlier.\nSince the 26th, Johnson has been quarantined at his Downing Street residence. He is the first known world leader to have contracted the virus.\xa0\nRoughly a month ago, right around the time the U.K. started dealing with an outbreak, Johnson garnered media coverage for saying he\'d shook hands with coronavirus patients during a hospital visit. \xa0\n"I shook hands with everybody, you will be pleased to know, and I continue to shake hands," Johnson said during a press conference that took place on March 3. His positive test was registered 23 days later.\xa0\nOn Saturday, Johnson\'s fiancée, Carrie Symonds, tweeted out that she\'d spent a week in bed with coronavirus symptoms. She had not officially been tested for the disease, but said she felt "stronger" and "on the mend" following the week of rest:', 
@@ -49,6 +50,7 @@ An example of one of the unwrapped source lines:
     'summary': {'sentences': ['On Sunday, British Prime Minister Boris Johnson was hospitalized "for tests" because of "persistent" COVID-19 symptoms\xa010 days\xa0after he tested positive, CNN reports.', 'On March 26, Johnson revealed he had tested positive and that he had been dealing with symptoms since that date.', "Roughly a month ago, right around the time the U.K. started dealing with an outbreak, Johnson garnered media coverage for saying he'd shook hands with coronavirus patients during a hospital visit.", '"I shook hands with everybody, you will be pleased to know, and I continue to shake hands," Johnson said during a press conference that took place on March 3.', "On Saturday, Johnson's fiancée, Carrie Symonds, tweeted out that she'd spent a week in bed with coronavirus symptoms."]}, 
 
     'title': 'British Prime Minister Boris Johnson Hospitalized 10 Days After COVID-19 Diagnosis', 
-    
+
     'words_count': 218
-}
+    }
+    '''
