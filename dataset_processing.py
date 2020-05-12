@@ -143,4 +143,4 @@ def main_process(dataset_filename: str, target_words_filename: str):
 
     return output_dict
 
-# main_process('aylien_data.jsonl', 'test_words.txt')
+# main_process('aylien_data.jsonl', 'target_words.txt')
