@@ -125,15 +125,22 @@ def freq_data_populate(data_input_file: str, target_words: str, dict_input: dict
     return dict_input
 
 
-def main():
+def main_process(dataset_filename: str, target_words_filename: str):
+    '''
+        (str, str) -> dict
+        Main processing function, takes string names of dataset and target word txt filenames
+        Uses previous functions to populate output dictionary
+    '''
     start_time = tt.time()
     print("\nSTART AT: {} \nRUNNING...".format(tt.ctime()))
 
-    test_dict = time_data_populate('aylien_data.jsonl')
-    freq_data_populate('aylien_data.jsonl', 'test_words.txt', test_dict)
+    test_dict = time_data_populate(dataset_filename)
+    output_dict = freq_data_populate(dataset_filename, target_words_filename, test_dict)
 
     print('\n\nDONE')
     print("TOTAL", end=" ")
     runtime(start_time)
 
-main()
+    return output_dict
+
+# main_process('aylien_data.jsonl', 'test_words.txt')
