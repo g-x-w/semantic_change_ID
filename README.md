@@ -1,4 +1,4 @@
-# A GitHub repo Identifying Sources of Semantic Change
+# Identifying Sources of Semantic Change
 This is a repository for code to be used in the research project into a computational method for identifying sources of semantic change carried out during the Summer of 2020 by Gary Wei with the Cognitive Lexicon Lab (CLL) in University of Toronto.
 
 Contribution and push access will be granted to Professor Yang Xu and John Xu of the CLL.
@@ -53,7 +53,7 @@ and is formatted as a JSON lines file. It consists of 528848 articles from ~400 
     }
 
 ## Code Structure
-All script functions are annotated with docstrings for ease of following; `jsonl_sources` pulls specific values from a given key in the dataset, facilitating manual navigation of the set for understanding. The main script `target_word_data` processes the full dataset and outputs a dictionary in the format:
+All script functions are annotated with docstrings for ease of following; `jsonl_nav.py` pulls specific values from a given key in the dataset, facilitating manual navigation of the set for understanding. The main script `dataset_processing.py` processes the full dataset and outputs a dictionary in the format:
 
     {
     date1: {
