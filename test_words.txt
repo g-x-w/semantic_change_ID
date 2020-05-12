@@ -5,7 +5,6 @@ virtual
 spread
 quarantine
 isolation
-social distance
 covid-19
 infection
 infectious
@@ -16,5 +15,6 @@ pandemic
 outbreak
 epidemic
 virus
+viral
 vaccine
 transmission

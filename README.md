@@ -3,8 +3,8 @@ This is a repository for code to be used in the research project into a computat
 
 Contribution and push access will be granted to Professor Yang Xu and John Xu of the CLL.
 
-## Current stage:
-Currently looking at using a dataset of primary sources to track frequency of target words across different sources and timeframes during the SARS-CoV-2 pandemic. The dataset is available from: 
+## Dataset:
+Looking at using a dataset of primary sources to track frequency of target words across different sources and timeframes during the SARS-CoV-2 pandemic. The dataset is available from: 
 
 https://blog.aylien.com/free-coronavirus-news-dataset/
 
@@ -44,9 +44,45 @@ and is formatted as a JSON lines file. It consists of 528848 articles from ~400 
     'social_shares_count': {'facebook': [{'count': 97, 'fetched_at': '2020-04-06 18:25:41+00:00'}, {'count': 92, 'fetched_at': '2020-04-06 12:26:08+00:00'}, {'count': 68, 'fetched_at': '2020-04-06 06:26:23+00:00'}, {'count': 15, 'fetched_at': '2020-04-06 00:26:22+00:00'}], 'google_plus': [], 'linkedin': [], 'reddit': [{'count': 0, 'fetched_at': '2020-04-06 18:14:08+00:00'}, {'count': 0, 'fetched_at': '2020-04-06 09:17:25+00:00'}, {'count': 0, 'fetched_at': '2020-04-06 00:19:00+00:00'}]}, 
 
     'source': {'description': None, 'domain': 'complex.com', 'home_page_url': 'http://www.complex.com/', 'id': 1737, 'links_in_count': None, 'locations': [{'city': 'New York', 'country': 'US', 'state': 'New York'}], 'logo_url': 'https://images.complex.com/complex/image/upload/c_pad,g_west,h_40,w_125/v1464104389/COMPLEX_2015_RGB.png', 'name': 'Complex', 'rankings': {'alexa': [{'country': None, 'fetched_at': '2019-06-06 16:06:34+00:00', 'rank': 4137}, {'country': 'AO', 'fetched_at': '2019-06-06 16:06:34+00:00', 'rank': 6499}, {'country': 'IN', 'fetched_at': '2019-06-06 16:06:34+00:00', 'rank': 10579}, {'country': 'PH', 'fetched_at': '2019-06-06 16:06:34+00:00', 'rank': 2797}, {'country': 'ES', 'fetched_at': '2019-06-06 16:06:34+00:00', 'rank': 14605}, {'country': 'US', 'fetched_at': '2019-06-06 16:06:34+00:00', 'rank': 1177}, {'country': 'IE', 'fetched_at': '2019-06-06 16:06:34+00:00', 'rank': 2584}, {'country': 'AU', 'fetched_at': '2019-06-06 16:06:34+00:00', 'rank': 2148}, {'country': 'NO', 'fetched_at': '2019-06-06 16:06:34+00:00', 'rank': 1836}, {'country': 'NG', 'fetched_at': '2019-06-06 16:06:34+00:00', 'rank': 3365}, {'country': 'SE', 'fetched_at': '2019-06-06 16:06:34+00:00', 'rank': 3524}, {'country': 'GB', 'fetched_at': '2019-06-06 16:06:34+00:00', 'rank': 2423}, {'country': 'FR', 'fetched_at': '2019-06-06 16:06:34+00:00', 'rank': 7755}, {'country': 'BR', 'fetched_at': '2019-06-06 16:06:34+00:00', 'rank': 17651}, {'country': 'ZA', 'fetched_at': '2019-06-06 16:06:34+00:00', 'rank': 2683}, {'country': 'DK', 'fetched_at': '2019-06-06 16:06:34+00:00', 'rank': 1581}, {'country': 'NL', 'fetched_at': '2019-06-06 16:06:34+00:00', 'rank': 5918}, {'country': 'CA', 'fetched_at': '2019-06-06 16:06:34+00:00', 'rank': 1424}, {'country': 'JP', 'fetched_at': '2019-06-06 16:06:34+00:00', 'rank': 21410}, {'country': 'CN', 'fetched_at': '2019-06-06 16:06:34+00:00', 'rank': 20214}, {'country': 'DE', 'fetched_at': '2019-06-06 16:06:34+00:00', 'rank': 8293}]}, 'scopes': [{'city': None, 'country': None, 'level': 'international', 'state': None}], 'title': None}, 
+    
     'summary': {'sentences': ['On Sunday, British Prime Minister Boris Johnson was hospitalized "for tests" because of "persistent" COVID-19 symptoms\xa010 days\xa0after he tested positive, CNN reports.', 'On March 26, Johnson revealed he had tested positive and that he had been dealing with symptoms since that date.', "Roughly a month ago, right around the time the U.K. started dealing with an outbreak, Johnson garnered media coverage for saying he'd shook hands with coronavirus patients during a hospital visit.", '"I shook hands with everybody, you will be pleased to know, and I continue to shake hands," Johnson said during a press conference that took place on March 3.', "On Saturday, Johnson's fiancée, Carrie Symonds, tweeted out that she'd spent a week in bed with coronavirus symptoms."]}, 
 
     'title': 'British Prime Minister Boris Johnson Hospitalized 10 Days After COVID-19 Diagnosis', 
 
     'words_count': 218
     }
+
+## Code Structure
+All script functions are annotated with docstrings for ease of following; `jsonl_sources` pulls specific values from a given key in the dataset, facilitating manual navigation of the set for understanding. The main script `target_word_data` processes the full dataset and outputs a dictionary in the format:
+
+    {
+    date1: {
+        source1: {
+            total count: {word1: count, word2: count, ..., wordn: count},
+            article1: {time: '16:00:00', word1: count, word2: count, ..., wordn: count},
+            article2: {time: '16:00:00', word1: count, word2: count, ..., wordn: count},
+            ...
+            articlen: {time: '16:00:00', word1: count, word2: count, ..., wordn: count}
+        source2: {time: '16:00:00', word1: count, word2: count, ..., wordn: count},
+        ...
+        sourcen: {time: '16:00:00', word1: count, word2: count, ..., wordn: count}
+        }
+    date2: {
+        source1: {time: '16:00:00', word1: count, word2: count, ..., wordn: count}, 
+        source2: {time: '16:00:00', word1: count, word2: count, ..., wordn: count},
+        ...
+        sourcen: {time: '16:00:00', word1: count, word2: count, ..., wordn: count}
+        }
+    ...
+    daten: {
+        source1: {time: '16:00:00', word1: count, word2: count, ..., wordn: count}, 
+        source2: {time: '16:00:00', word1: count, word2: count, ..., wordn: count},
+        ...
+        sourcen: {time: '16:00:00', word1: count, word2: count, ..., wordn: count}
+        }    
+    }
+
+in both a text file and a JSON file. With the size of the aylien dataset being used (~7.6 GB), this output file works out to ~240MB or roughly 2 minute of full HD video.
+
+## Current Stage
+Having processed the data for this purpose, currently working on graphical and visual representations of the data in as high resolution as is reasonable. Next steps will be improve usability and parameterization of search in the direction of a utility search tool.

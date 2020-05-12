@@ -4,4 +4,8 @@ workspace.py
 test.py
 jsonl_reader.py
 jsonl_dates.py
-*.txt
+
+bodies.txt
+dates_list.txt
+workspace.txt
+target_data.txt
