@@ -1,4 +1,7 @@
 aylien_data.jsonl
+scratch.py
 workspace.py
-dates_list.txt
 test.py
+jsonl_reader.py
+jsonl_dates.py
+*.txt
