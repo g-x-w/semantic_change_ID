@@ -123,7 +123,7 @@ def main_single(target_word_file: str, input_data_file: str):
     ws.runtime(start_time)
 
 
-def main_multi(target_word_file: str, input_data_file: str):
+def main_multi(target_word_file: str, input_data_file: str): ## IPR
     start_time = tt.time()
     print("\nSTART GRAPHING AT: {} \nRUNNING...".format(tt.ctime()))
 
@@ -134,7 +134,7 @@ def main_multi(target_word_file: str, input_data_file: str):
     print("TOTAL", end=" ")
     ws.runtime(start_time)
 
-##
+####
 
 main_single('test_words.txt', 'aylien_data.jsonl')
 # main_multi('test_words.txt', 'aylien_data.jsonl')
