@@ -73,10 +73,8 @@ def pull_n_values(filename: str):
 def main():
     start_time = tt.time()
     print("RUNNING...")
-    
     pull_n_values('aylien_data.jsonl')
-
     print('\n\nDONE')
     runtime(start_time)
 
-main()
+# main()

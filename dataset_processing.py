@@ -45,7 +45,7 @@ def runtime(start):
 
 def time_data_populate(data_input_file: str):
     '''
-        (str) -> dictionary & txt file
+        (str) -> {str:{str:{str:{str:int}}}} & txt file
         processes dataset and returns data object as triple-nested dictionary 
         as in script docstring
         only populates dates, sources
@@ -85,7 +85,7 @@ def time_data_populate(data_input_file: str):
 
 def freq_data_populate(data_input_file: str, target_words: str, dict_input: dict):
     '''
-        (str, str, dict) -> dictionary & text file
+        (str, str, dict) -> {str:{str:{str:{str:int}}}} & text file
         further processes output dictionary object from time_data_population
         populates sources with target terms and occurrence counts in source body text
     '''
@@ -127,7 +127,7 @@ def freq_data_populate(data_input_file: str, target_words: str, dict_input: dict
 
 def main_process(dataset_filename: str, target_words_filename: str):
     '''
-        (str, str) -> dict
+        (str, str) -> {str:{str:{str:{str:int}}}}
         Main processing function, takes string names of dataset and target word txt filenames
         Uses previous functions to populate output dictionary
     '''
