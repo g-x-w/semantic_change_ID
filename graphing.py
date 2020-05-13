@@ -33,7 +33,7 @@ def pull_freq_data(target_word_file: str, input_data_file: str):
                 source_counts[recorded_source].append(0)
     
     output = [date_list, source_counts]
-    print (output)
+    # print (output)
     return output
 
 
@@ -59,7 +59,7 @@ def main_graph(target_word_file: str, input_data_file: str):
     print("\nSTART GRAPHING AT: {} \nRUNNING...".format(tt.ctime()))
 
     transfer = pull_freq_data(target_word_file, input_data_file)
-    # graph_term('coronavirus', transfer)
+    graph_term('coronavirus', transfer)
 
     print('\n\nDONE')
     print("TOTAL", end=" ")
