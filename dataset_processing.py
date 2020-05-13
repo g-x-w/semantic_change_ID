@@ -132,7 +132,7 @@ def main_process(dataset_filename: str, target_words_filename: str):
         Uses previous functions to populate output dictionary
     '''
     start_time = tt.time()
-    print("\nSTART AT: {} \nRUNNING...".format(tt.ctime()))
+    print("\nSTART DATA PROCESSING AT: {} \nRUNNING...".format(tt.ctime()))
 
     test_dict = time_data_populate(dataset_filename)
     output_dict = freq_data_populate(dataset_filename, target_words_filename, test_dict)
