@@ -11,4 +11,6 @@ workspace.txt
 target_data.txt
 scratch.txt
 
+target_data.json
+
 __pycache__/

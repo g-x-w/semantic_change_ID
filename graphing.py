@@ -2,7 +2,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import dataset_processing as dp
 import time as tt
-import workspace as ws
+# import workspace as ws
 
 def pull_single_freq_data(target_word_file: str, input_data_file: str):
     '''
@@ -11,7 +11,7 @@ def pull_single_freq_data(target_word_file: str, input_data_file: str):
         Returns in the format:
         [[date1, date2, date3, ... , daten], {source1: [day1_ct, day2_ct, ... , dayn_ct], source2: [day1_ct, day2_ct, ... , dayn_ct]}]
     '''
-    input_data = ws.main_test_process(input_data_file, target_word_file, 400000)
+    input_data = dp.main_process(input_data_file, target_word_file)
     date_list = []
     source_counts = {}
 
@@ -55,6 +55,18 @@ def graph_single_term(target: str, input_list: list):
     plt.show()
 
 
+def main_single(target_word_file: str, input_data_file: str):
+    start_time = tt.time()
+    print("\nSTART GRAPHING AT: {} \nRUNNING...".format(tt.ctime()))
+
+    transfer = pull_single_freq_data(target_word_file, input_data_file)
+    graph_single_term('coronavirus', transfer)
+
+    print('\n\nDONE')
+    print("TOTAL", end=" ")
+    dp.runtime(start_time)
+
+
 def pull_multi_freq_data(target_word_file: str, input_data_file: str): ## IPR
     '''
         (str, str) -> [[str], [{str:[int]}]]
@@ -64,7 +76,7 @@ def pull_multi_freq_data(target_word_file: str, input_data_file: str): ## IPR
         [{source1: [word1day1_ct, word2day1_ct, ... , wordnday1_ct], source2: [word1day1_ct, word2day1_ct, ... , wordnday1_ct]},
         {source1: [word1day2_ct, word2day2_ct, ... , wordnday2_ct], source2: [word1day2_ct, word2day2_ct, ... , wordnday2_ct]}]]
     '''
-    input_data = ws.main_test_process(input_data_file, target_word_file, 80000)
+    input_data = dp.main_process(input_data_file, target_word_file)
     date_list = []
     source_count_list = []
 
@@ -111,18 +123,6 @@ def graph_multi_term(target: str, input_list: list): ## IPR
     plt.show()
 
 
-def main_single(target_word_file: str, input_data_file: str):
-    start_time = tt.time()
-    print("\nSTART GRAPHING AT: {} \nRUNNING...".format(tt.ctime()))
-
-    transfer = pull_single_freq_data(target_word_file, input_data_file)
-    graph_single_term('coronavirus', transfer)
-
-    print('\n\nDONE')
-    print("TOTAL", end=" ")
-    ws.runtime(start_time)
-
-
 def main_multi(target_word_file: str, input_data_file: str): ## IPR
     start_time = tt.time()
     print("\nSTART GRAPHING AT: {} \nRUNNING...".format(tt.ctime()))
@@ -132,7 +132,7 @@ def main_multi(target_word_file: str, input_data_file: str): ## IPR
 
     print('\n\nDONE')
     print("TOTAL", end=" ")
-    ws.runtime(start_time)
+    dp.runtime(start_time)
 
 ####
 

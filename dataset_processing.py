@@ -12,22 +12,22 @@ import string as stng
                 article2: {time: '16:00:00', word1: count, word2: count, ..., wordn: count},
                 ...
                 articlen: {time: '16:00:00', word1: count, word2: count, ..., wordn: count}
-            source2: {time: '16:00:00', word1: count, word2: count, ..., wordn: count},
+            source2: {...},
             ...
-            sourcen: {time: '16:00:00', word1: count, word2: count, ..., wordn: count}
+            sourcen: {...}
             }
         date2: {
-            source1: {time: '16:00:00', word1: count, word2: count, ..., wordn: count}, 
-            source2: {time: '16:00:00', word1: count, word2: count, ..., wordn: count},
+            source1: {...}, 
+            source2: {...},
             ...
-            sourcen: {time: '16:00:00', word1: count, word2: count, ..., wordn: count}
+            sourcen: {...}
             }
         ...
         daten: {
-            source1: {time: '16:00:00', word1: count, word2: count, ..., wordn: count}, 
-            source2: {time: '16:00:00', word1: count, word2: count, ..., wordn: count},
+            source1: {...}, 
+            source2: {...},
             ...
-            sourcen: {time: '16:00:00', word1: count, word2: count, ..., wordn: count}
+            sourcen: {...}
             }    
         }
     in txt file and as JSON file. Sources are defined as single domain names (i.e., )
