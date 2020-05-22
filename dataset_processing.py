@@ -90,7 +90,7 @@ def freq_data_populate(data_input_file: str, target_words: str, dict_input: dict
         populates sources with target terms and occurrence counts in source body text
     '''
     freq_pop_start = tt.time()
-    output = open("target_data.txt","w", encoding="utf-8")
+    output = open("output_data_full.txt","w", encoding="utf-8")
     targets = []
 
     with open(target_words) as datastream:
@@ -138,7 +138,7 @@ def main_process(dataset_filename: str, target_words_filename: str):
     output_dict = freq_data_populate(dataset_filename, target_words_filename, test_dict)
 
     print('\n\nDONE')
-    print("TOTAL", end=" ")
+    print("PROCESSING", end=" ")
     runtime(start_time)
 
     return output_dict
