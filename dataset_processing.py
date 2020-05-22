@@ -137,7 +137,7 @@ def main_process(dataset_filename: str, target_words_filename: str):
     test_dict = time_data_populate(dataset_filename)
     output_dict = freq_data_populate(dataset_filename, target_words_filename, test_dict)
 
-    print('\n\nDONE')
+    print('\nDONE')
     print("PROCESSING", end=" ")
     runtime(start_time)
 

@@ -7,8 +7,6 @@ jsonl_dates.py
 source_clean.py
 graphing_test.py
 
-counts_only.txt
-wide_data_lineplot.py
 csv_out.csv
 bodies.txt
 dates_list.txt
