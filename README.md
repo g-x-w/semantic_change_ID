@@ -82,7 +82,7 @@ All script functions are annotated with docstrings for ease of following; `jsonl
         }    
     }
 
-in both a text file and a JSON file. With the size of the aylien dataset being used (~7.6 GB), this output file works out to ~240MB or roughly 2 minutes of full HD video. The processed output file is then fed into `graphing.py`, which will produce simple graphs of single and multi-term searches for occurrence throughout the dataset's articles and output higher resolution data written as .txt or .json files. 
+in a text file. Tokenization occurs in `dataset_processing.py` with a simply algorithm stripping white space and delimiting tokens by spaces. With the size of the aylien dataset being used (~7.6 GB), this output file works out to ~240MB or roughly 2 minutes of full HD video. The processed output file is then fed into `graphing.py`, which will produce simple graphs of single and multi-term searches for occurrence throughout the dataset's articles and output higher resolution data written as .txt/.json and .csv files. 
 
 ## Current Stage
-Having processed the data for this purpose, currently working on graphical and visual representations of the data in as high resolution as is reasonable.
+Having processed the data for this purpose, currently working on improving program robustness by possibly pivoting to external library for tokenization via regexp's and allowing for greater flexibility in multi-word queries.
