@@ -70,7 +70,7 @@ def main_single(target_word_file: str, input_data_file: str):
     dp.runtime(start_time)
 
 
-def pull_multi_freq_data(target_word_file: str, input_data_file: str): ## IPR
+def pull_multi_freq_data(target_word_file: str, input_data_file: str):
     '''
         (str, str) -> [[str], [{str:[int]}]]
         Pulls frequency data for single word from processed dataset in two filenames returned from dataset_processing.py
@@ -111,9 +111,10 @@ def pull_multi_freq_data(target_word_file: str, input_data_file: str): ## IPR
     return output
 
 
-def graph_multi_term(target: str, input_list: list): ## IPR
+def graph_multi_term(title: str, input_list: list):
     '''
         ([str], {str:[int]}]) -> graphs
+        Takes output from pull_multi_freq_data and uses it to make graph
     '''
     plt.close("all")
     # input_list[0].reverse()
@@ -136,6 +137,7 @@ def graph_multi_term(target: str, input_list: list): ## IPR
     data_in = pd.DataFrame(data=count_list, index=input_list[0], columns=input_list[1])
     ax = sb.lineplot(data=data_in, palette="tab10", linewidth=2.0)
     ax.set(xlabel='Date', ylabel='Occurrences')
+    plt.title(title)
     plt.xticks(rotation=70)
     plt.tight_layout()
     plt.show()
@@ -165,13 +167,13 @@ def csv_output(output_filename: str, input_list: list):
             wr.writerow(line)
 
 
-def main_multi(target_word_file: str, input_data_file: str): ## IPR
+def main_multi(target_word_file: str, input_data_file: str, graph_title: str, csv_filename: str): ## IPR
     start_time = tt.time()
     print("\nSTART GRAPHING AT: {} \nRUNNING...".format(tt.ctime()))
 
     transfer = pull_multi_freq_data(target_word_file, input_data_file)
-    counts = graph_multi_term('coronavirus', transfer)
-    csv_output('csv_out.csv', counts)
+    counts = graph_multi_term(graph_title, transfer)
+    csv_output(csv_filename, counts)
 
     print("TOTAL", end=" ")
     dp.runtime(start_time)
@@ -179,4 +181,4 @@ def main_multi(target_word_file: str, input_data_file: str): ## IPR
 ####
 
 # main_single('test_words.txt', 'aylien_data.jsonl')
-main_multi('test_words.txt', 'aylien_data.jsonl')
+main_multi('test_words.txt', 'aylien_data.jsonl', 'Occurrences of emergent terms in pandemic', 'csv_total_counts.csv')

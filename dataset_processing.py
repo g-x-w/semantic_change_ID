@@ -115,7 +115,7 @@ def freq_data_populate(data_input_file: str, target_words: str, dict_input: dict
                     dict_input[date][domain]['total count'][term] += body_list.count(term)
                 dict_input[date][domain][article][term] = body_list.count(term)
 
-    with open('target_data.json', "w") as json_out:
+    with open('target_data_full.json', "w") as json_out:
         js.dump(dict_input, json_out)
 
     output.write(str(dict_input))
@@ -131,6 +131,59 @@ def main_process(dataset_filename: str, target_words_filename: str):
         Main processing function, takes string names of dataset and target word txt filenames
         Uses previous functions to populate output dictionary
     '''
+    start_time = tt.time()
+    print("\nSTART DATA PROCESSING AT: {} \nRUNNING...".format(tt.ctime()))
+
+    test_dict = time_data_populate(dataset_filename)
+    output_dict = freq_data_populate(dataset_filename, target_words_filename, test_dict)
+
+    print('\nDONE')
+    print("PROCESSING", end=" ")
+    runtime(start_time)
+
+    return output_dict
+
+
+def freq_data_populate(data_input_file: str, target_words: str, dict_input: dict, sourcename: str):
+    freq_pop_start = tt.time()
+    output = open("output_data_full.txt","w", encoding="utf-8")
+    targets = []
+
+    with open(target_words) as datastream:
+        for line in datastream.readlines():
+            targets.append(line.strip())
+
+    with open(data_input_file) as datastream:
+        for line in datastream:
+            js_obj = js.loads(line)
+            date = (js_obj['published_at'].split())[0]
+            domain = js_obj['source']['domain']
+            article = js_obj['links']['permalink']
+            if sourcename not in domain:
+                pass
+            else:
+                body_list = (js_obj['body']).lower()
+                body_list = body_list.translate(str.maketrans('','',stng.punctuation))
+                body_list = body_list.split()
+
+                for term in targets:
+                    if term not in dict_input[date][domain]['total count'].keys():
+                        dict_input[date][domain]['total count'][term] = body_list.count(term)
+                    else:
+                        dict_input[date][domain]['total count'][term] += body_list.count(term)
+                    dict_input[date][domain][article][term] = body_list.count(term)
+
+    with open('target_data_full.json', "w") as json_out:
+        js.dump(dict_input, json_out)
+
+    output.write(str(dict_input))
+    output.close()
+    print("TARGET WORD POPULATION", end = " ")
+    runtime(freq_pop_start)
+    return dict_input
+
+
+def main_process_singlesource(dataset_filename: str, target_words_filename: str, sourcename: str):
     start_time = tt.time()
     print("\nSTART DATA PROCESSING AT: {} \nRUNNING...".format(tt.ctime()))
 
