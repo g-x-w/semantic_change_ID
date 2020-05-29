@@ -5,7 +5,6 @@ import pandas as pd
 import csv as csv
 import time as tt
 import dataset_processing as dp
-import workspace as ws
 
 def pull_single_freq_data(target_word_file: str, input_data_file: str):
     '''
@@ -70,16 +69,16 @@ def main_single(target_word_file: str, input_data_file: str):
     dp.runtime(start_time)
 
 
-def pull_multi_freq_data(target_word_file: str, input_data_file: str):
+def pull_multi_freq_data(target_word_file: str, input_data_file: str, sourcename=False):
     '''
         (str, str) -> [[str], [{str:[int]}]]
         Pulls frequency data for single word from processed dataset in two filenames returned from dataset_processing.py
         Returns in the format:
-        [[date1, date2, date3, ... , daten], 
+        [[date1, date2, date3, ... , daten], [target1, target2, target3, ..., targetn],
         [{source1: [word1day1_ct, word2day1_ct, ... , wordnday1_ct], source2: [word1day1_ct, word2day1_ct, ... , wordnday1_ct]},
         {source1: [word1day2_ct, word2day2_ct, ... , wordnday2_ct], source2: [word1day2_ct, word2day2_ct, ... , wordnday2_ct]}]]
     '''
-    input_data = dp.main_process(input_data_file, target_word_file)
+    input_data = dp.main_process(input_data_file, target_word_file, sourcename)
     date_list = []
     source_count_list = []
     output_file = open("output_data_stripped.txt", "w", encoding="utf-8")
@@ -167,11 +166,11 @@ def csv_output(output_filename: str, input_list: list):
             wr.writerow(line)
 
 
-def main_multi(target_word_file: str, input_data_file: str, graph_title: str, csv_filename: str): ## IPR
+def main_multi(target_word_file: str, input_data_file: str, graph_title: str, csv_filename: str, sourcename=False): ## IPR
     start_time = tt.time()
     print("\nSTART GRAPHING AT: {} \nRUNNING...".format(tt.ctime()))
 
-    transfer = pull_multi_freq_data(target_word_file, input_data_file)
+    transfer = pull_multi_freq_data(target_word_file, input_data_file, sourcename)
     counts = graph_multi_term(graph_title, transfer)
     csv_output(csv_filename, counts)
 
@@ -181,4 +180,4 @@ def main_multi(target_word_file: str, input_data_file: str, graph_title: str, cs
 ####
 
 # main_single('test_words.txt', 'aylien_data.jsonl')
-main_multi('test_words.txt', 'aylien_data.jsonl', 'Occurrences of emergent terms in pandemic', 'csv_total_counts.csv')
+main_multi('test_words.txt', 'aylien_data.jsonl', 'Occurrences of emergent terms in pandemic', 'csv_total_counts.csv', 'cnn')

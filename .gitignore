@@ -21,7 +21,12 @@ output_data_full.txt
 target_cluster_1.txt
 target_cluster_2.txt
 target_data_full.json
+output_data_full.json
+csv_total_counts_test.csv
+counts_only_test.txt
+scratch2.txt
 
 target_data.json
 
 __pycache__/
+intermediate_data_May29/
