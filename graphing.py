@@ -85,7 +85,7 @@ def pull_multi_freq_data(target_word_file: str, input_data_file: str, sourcename
     else:
         file_out_name = '{}_output_stripped.txt'.format(sourcename)
 
-    input_data = dp.main_process(input_data_file, target_word_file, sourcename) ## changeline for testing
+    input_data = ws.main_process(input_data_file, target_word_file, 528848, sourcename) ## changeline for testing
     date_list = []
     source_count_list = []
     output_file = open(file_out_name, "w", encoding="utf-8")
@@ -95,6 +95,8 @@ def pull_multi_freq_data(target_word_file: str, input_data_file: str, sourcename
         for i in range(len(target_list)):
             if target_list[-1] == '_':
                 target_list[i] = target_list[i].strip().lower().replace('-',' ').translate(str.maketrans('','', stng.punctuation)) + '_'
+            else:
+                target_list[i] = target_list[i].strip().lower().replace('-',' ').translate(str.maketrans('','', stng.punctuation))
     
     for date in input_data.keys():
         date_list.append(date)
@@ -114,7 +116,7 @@ def pull_multi_freq_data(target_word_file: str, input_data_file: str, sourcename
     return output
 
 
-def graph_multi_term(input_list: list, sourcename=False): ### CLEAN UP THIS FLAMING DUMPSTER
+def graph_multi_term(input_list: list, target_filename: str, sourcename=False): ### CLEAN UP THIS FLAMING DUMPSTER
     '''
         ([str], {str:[int]}]) -> graphs
         Takes output from pull_multi_freq_data and uses it to make graph
@@ -129,8 +131,8 @@ def graph_multi_term(input_list: list, sourcename=False): ### CLEAN UP THIS FLAM
         title = 'Type and Token Frequency from All Sources in Dataset'
         file_out_name = 'all_source_tok_freq.txt'
     else:
-        title = 'Type and Token Frequency from {}'.format(sourcename)
-        file_out_name = '{}_typeandtok_freq.txt'.format(sourcename)
+        title = 'Type and Token Frequency from {} for {}.png'.format(sourcename, target_filename[:-4])
+        file_out_name = '{}_typeandtok_freq_{}'.format(sourcename, target_filename)
 
     outfile = open(file_out_name,"w")
 
@@ -149,7 +151,7 @@ def graph_multi_term(input_list: list, sourcename=False): ### CLEAN UP THIS FLAM
     sb.set(style="whitegrid") 
     plt.subplot(122)
     data_in_tok = pd.DataFrame(data=count_list, index=input_list[0], columns=input_list[1])
-    tok_freq = sb.lineplot(data=data_in_tok, dashes=False, palette="tab10", linewidth=2.0, )
+    tok_freq = sb.lineplot(data=data_in_tok, dashes=False, palette="tab10", linewidth=2.0)
     tok_freq.set(xlabel='Date', ylabel='Occurrences')
     tok_freq.set_title(title_tok)
     plt.title(title_tok)
@@ -169,7 +171,7 @@ def graph_multi_term(input_list: list, sourcename=False): ### CLEAN UP THIS FLAM
                 if input_list[2][n][key_val][p] > 0:
                     type_list[p][n] += 1
 
-    print(type_list)    ### FUCK SEABORN???? USE GROUPED BARCHARTS AND FIGURE IT OUT
+    # print(type_list)    ### ???? USE GROUPED BARCHARTS AND FIGURE IT OUT
     plt.subplot(121)
     data_in_type = pd.DataFrame(data=type_list, index=input_list[1], columns=input_list[0])
     type_freq = sb.barplot(data=data_in_type, ci=None)
@@ -194,9 +196,9 @@ def csv_output(input_list: list, sourcename=False):
         ([[dates],[target words],[[day1 counts],[day2 counts]]]) -> csv
     '''
     if sourcename == False:
-        output_filename = "all_source_tok_freq.txt"
+        output_filename = "all_source_tok_freq.csv"
     else:
-        output_filename = "{}_tok_freq.txt".format(sourcename)
+        output_filename = "{}_type_tok_freq.csv".format(sourcename)
 
     input_list[1].insert(0, 'Date')
     for i in range(len(input_list[0])):
@@ -212,15 +214,13 @@ def csv_output(input_list: list, sourcename=False):
 
 def main_multi(target_word_file: str, input_data_file: str, sourcename=False):
     start_time = tt.time()
-    print("\nSTART GRAPHING AT: {} \nRUNNING...".format(tt.ctime()))
+    print("\nSTART AT: {} \nRUNNING...".format(tt.ctime()))
 
     transfer = pull_multi_freq_data(target_word_file, input_data_file, sourcename)
-    counts = graph_multi_term(transfer, sourcename)
+    counts = graph_multi_term(transfer, target_word_file, sourcename)
     csv_output(counts, sourcename)
 
-    print("TOTAL", end=" ")
+    print("\tTotal", end=" ")
     dp.runtime(start_time)
 
-####
-
-main_multi('test_words.txt', 'aylien_data.jsonl', 'reuters')
+main_multi('cluster1_coronavirus.txt','aylien_data.jsonl', 'reuters.com')

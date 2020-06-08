@@ -2,38 +2,7 @@ import json as js
 import time as tt
 import string as stng
 
-'''
-    Will output 1 python dictionary/JSON object object with format
-        {
-        date1: {
-            source1: {
-                total count: {word1: count, word2: count, ..., wordn: count},
-                article1: {time: '16:00:00', word1: count, word2: count, ..., wordn: count},
-                article2: {time: '16:00:00', word1: count, word2: count, ..., wordn: count},
-                ...
-                articlen: {time: '16:00:00', word1: count, word2: count, ..., wordn: count}
-            source2: {...},
-            ...
-            sourcen: {...}
-            }
-        date2: {
-            source1: {...}, 
-            source2: {...},
-            ...
-            sourcen: {...}
-            }
-        ...
-        daten: {
-            source1: {...}, 
-            source2: {...},
-            ...
-            sourcen: {...}
-            }    
-        }
-    in txt file and as JSON file. Sources are defined as single domain names (i.e., )
-'''
-
-def runtime(start):
+def runtime(start: float):
     '''
         (float) -> float
         computes runtime
@@ -43,65 +12,70 @@ def runtime(start):
     print('RUNTIME: ', end_time-start)
 
 
-def time_data_populate(data_input_file: str, sourcename=False):
+def build_test_list(filename: str, test_range: int):
     '''
-        (str) -> {str:{str:{str:{str:int}}}} & txt file
-        processes dataset and returns data object as triple-nested dictionary 
-        as in script docstring
-        only populates dates, sources
+        (str) -> list
+        helper function to build test list for smaller samples
+        filename: str name of filename containing data
     '''
+    lines = []
+    with open(filename) as datastream:
+        for i in range(test_range):
+            lines.append(datastream.readline()) 
+    return lines
+
+
+def time_data_populate(filename: str, test_range: int, sourcename=False):
     time_pop_start = tt.time()
-    output = open("output_data_full.txt","w", encoding="utf-8")
+    output = open("workspace.txt","w", encoding="utf-8")    
     output_dict = {}
+    lines = build_test_list(filename, test_range)
 
-    with open(data_input_file) as datastream:
-        for line in datastream:
-            js_obj = js.loads(line)
-            date = (js_obj['published_at'].split())[0]
-            time_published = (js_obj['published_at'].split())[1]
-            domain = js_obj['source']['domain']
-            article = js_obj['links']['permalink']
+    for line in lines:
+        js_obj = js.loads(line)
+        date = (js_obj['published_at'].split())[0]
+        time_published = (js_obj['published_at'].split())[1]
+        domain = js_obj['source']['domain']
+        article = js_obj['links']['permalink']
 
-            if (sourcename != False) and (sourcename in domain):
-                if date not in output_dict.keys():
-                    output_dict[date] = {}
-                if domain not in output_dict[date].keys():
-                    output_dict[date][domain] = {}
-                if article not in output_dict[date][domain].keys():
-                    output_dict[date][domain][article] = {}
-                if 'total count' not in output_dict[date][domain].keys():
-                    output_dict[date][domain]['total count'] = {}
-                output_dict[date][domain][article]['Time Published'] = time_published
-            elif (sourcename == False):
-                if date not in output_dict.keys():
-                    output_dict[date] = {}
-                if domain not in output_dict[date].keys():
-                    output_dict[date][domain] = {}
-                if article not in output_dict[date][domain].keys():
-                    output_dict[date][domain][article] = {}
-                if 'total count' not in output_dict[date][domain].keys():
-                    output_dict[date][domain]['total count'] = {}
-                output_dict[date][domain][article]['Time Published'] = time_published
+        if (sourcename != False) and (sourcename in domain):
+            if date not in output_dict.keys():
+                output_dict[date] = {}
+            if domain not in output_dict[date].keys():
+                output_dict[date][domain] = {}
+            if article not in output_dict[date][domain].keys():
+                output_dict[date][domain][article] = {}
+            if 'total count' not in output_dict[date][domain].keys():
+                output_dict[date][domain]['total count'] = {}
+            output_dict[date][domain][article]['Time Published'] = time_published
+        elif (sourcename == False):
+            if date not in output_dict.keys():
+                output_dict[date] = {}
+            if domain not in output_dict[date].keys():
+                output_dict[date][domain] = {}
+            if article not in output_dict[date][domain].keys():
+                output_dict[date][domain][article] = {}
+            if 'total count' not in output_dict[date][domain].keys():
+                output_dict[date][domain]['total count'] = {}
+            output_dict[date][domain][article]['Time Published'] = time_published
 
     output.write(str(output_dict))
     output.close()
-    # print("\nTIME POPULATION", end = " ")
-    # runtime(time_pop_start)
+    print("\nTIME POPULATION", end = " ")
+    runtime(time_pop_start)
     return output_dict
 
 
-def freq_data_populate(data_input_file: str, target_words: str, dict_input: dict, sourcename=False):
+def freq_data_populate(filename: str, target_words: str, dict_input: dict, test_range: int, sourcename=False):
     '''
-        (str, str, dict) -> {str:{str:{str:{str:int}}}} & text file
-        further processes output dictionary object from time_data_population
-        populates sources with target terms and occurrence counts in source body text
     '''
     freq_pop_start = tt.time()
-    output = open("output_data_full.txt","w", encoding="utf-8")
+    output = open("workspace.txt","w", encoding="utf-8")    
+    lines = build_test_list(filename, test_range)
     targets = []
 
-    with open(target_words) as targetstream:
-        for line in targetstream.readlines():
+    with open(target_words) as datastream:
+        for line in datastream.readlines():
             if line.strip()[-1] == '_':
                 if ' ' in line.strip():
                     target = line.strip().lower().replace('-',' ').translate(str.maketrans('','', stng.punctuation)).split()
@@ -112,17 +86,16 @@ def freq_data_populate(data_input_file: str, target_words: str, dict_input: dict
                     target += '_'
                     targets.append(target)
             else:
-                if ' ' in line.strip() or '-' in line.strip():
+                if ' ' in line.strip():
                     targets.append(tuple(line.strip().lower().replace('-',' ').translate(str.maketrans('','', stng.punctuation)).split()))
                 else:
                     targets.append(line.strip().lower().replace('-',' ').translate(str.maketrans('','', stng.punctuation)))
 
-    with open(data_input_file) as datastream:
-        for line in datastream:
-            js_obj = js.loads(line)
-            date = (js_obj['published_at'].split())[0]
-            domain = js_obj['source']['domain']
-            article = js_obj['links']['permalink']
+    for line in lines:
+        js_obj = js.loads(line)
+        date = (js_obj['published_at'].split())[0]
+        domain = js_obj['source']['domain']
+        article = js_obj['links']['permalink']
         
         if (sourcename != False) and (sourcename not in domain):
             pass
@@ -200,30 +173,29 @@ def freq_data_populate(data_input_file: str, target_words: str, dict_input: dict
                         dict_input[date][domain]['total count'][' '.join(term)] += token_count
                     dict_input[date][domain][article][' '.join(term)] = token_count
 
-    with open('output_data_full.json', "w") as json_out:
-        js.dump(dict_input, json_out)
-
     output.write(str(dict_input))
     output.close()
-    # print("TARGET WORD POPULATION", end = " ")
-    # runtime(freq_pop_start)
+    print("TARGET WORD POPULATION", end = " ")
+    runtime(freq_pop_start)
     return dict_input
 
 
-def main_process(dataset_filename: str, target_words_filename: str, sourcename=False):
+def main_process(dataset_filename: str, target_words_filename: str, test_range: int, sourcename=False):
     '''
-        (str, str) -> {str:{str:{str:{str:int}}}}
+        (str, str) -> dict
         Main processing function, takes string names of dataset and target word txt filenames
         Uses previous functions to populate output dictionary
     '''
     start_time = tt.time()
-    # print("\nSTART DATA PROCESSING AT: {} \nRUNNING...".format(tt.ctime()))
+    print("\nSTART PROCESSING TEST AT: {} \nRUNNING...".format(tt.ctime()))
 
-    test_dict = time_data_populate(dataset_filename, sourcename)
-    output_dict = freq_data_populate(dataset_filename, target_words_filename, test_dict, sourcename)
+    test_dict = time_data_populate(dataset_filename, test_range, sourcename)
+    output_dict = freq_data_populate(dataset_filename, target_words_filename, test_dict, test_range, sourcename)
 
-    # print('\nDONE')
-    # print("PROCESSING", end=" ")
-    # runtime(start_time)
+    print('\n\nDONE')
+    print("PROCESSING", end=" ")
+    runtime(start_time)
 
     return output_dict
+
+# main_test_process('aylien_data.jsonl', 'target_words.txt', 10)
