@@ -62,7 +62,7 @@ def time_data_populate(data_input_file: str, sourcename=False):
             domain = js_obj['source']['domain']
             article = js_obj['links']['permalink']
 
-            if (sourcename != False) and (sourcename in domain):
+            if (sourcename != False) and (sourcename in domain): ### FLAG
                 if date not in output_dict.keys():
                     output_dict[date] = {}
                 if domain not in output_dict[date].keys():
