@@ -1,0 +1,7 @@
+fatalit(?:y|ies)
+casualt(?:y|ies)
+deaths?
+positive cases? 
+tests? positive|positive test?
+confirmed cases?
+suspected cases?

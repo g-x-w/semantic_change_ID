@@ -1,0 +1,6 @@
+quarantin(?:e|ing)
+social distanc(?:e|ing)
+lockdown
+physical distanc(?:e|ing)
+shutdown
+social isolation
