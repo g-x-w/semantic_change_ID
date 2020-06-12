@@ -1,7 +1,7 @@
 # Identifying Sources of Semantic Change
 This is a repository for code to be used in the research project into a computational method for identifying sources of semantic change carried out during the Summer of 2020 by Gary Wei with the Cognitive Lexicon Lab (CLL) in University of Toronto.
 
-Contribution and push access will be granted to Professor Yang Xu and John Xu of the CLL.
+Contribution and access will be granted to Professor Yang Xu and John Xu of the CLL.
 
 ## Dataset:
 Looking at using a dataset of primary sources to track frequency of target words across different sources and timeframes during the SARS-CoV-2 pandemic. The dataset is available from: 
@@ -53,36 +53,14 @@ and is formatted as a JSON lines file. It consists of 528848 articles from ~400 
     }
 
 ## Code Structure
-All script functions are annotated with docstrings for ease of following; the main script `dataset_processing.py` processes the full dataset and outputs a dictionary in the format:
+All script functions are annotated with docstrings for readability.
 
-    {
-    date1: {
-        source1: {
-            total count: {word1: count, word2: count, ..., wordn: count},
-            article1: {time: '16:00:00', word1: count, word2: count, ..., wordn: count},
-            article2: {time: '16:00:00', word1: count, word2: count, ..., wordn: count},
-            ...
-            articlen: {time: '16:00:00', word1: count, word2: count, ..., wordn: count}
-        source2: {...},
-        ...
-        sourcen: {...}
-        }
-    date2: {
-        source1: {...}, 
-        source2: {...},
-        ...
-        sourcen: {...}
-        }
-    ...
-    daten: {
-        source1: {...}, 
-        source2: {...},
-        ...
-        sourcen: {...}
-        }    
-    }
+Previous iterations of the code ran an inefficient algorithm which processed the entire dataset indiscriminately by line rather than by source, using the `dataset_processing_byline.py`. This approach did not use regular expressions with python's re library and called split tokenization, data manipulation, and graphing across several other files: `graphing.py`, `main.py`, and `workspace.py`. 
 
-in a text file. Tokenization occurs in `dataset_processing.py` with a simple algorithm stripping white space and delimiting tokens by spaces. With the size of the aylien dataset being used (~7.6 GB), this output file works out to ~120MB or roughly 1 minute of full HD video. The processed output file is then fed into `graphing.py`, which will produce simple graphs of single and multi-term searches for occurrence throughout the dataset's articles and output higher resolution data written as .txt/.json and .csv files. More detailed descriptions can be found within file docstrings.
+Currently, the main script `dataset_processing_bysource.py` processes the full dataset, running token frequency traces on each target pattern entered for all articles in the dataset published by a specified source in one file.
 
 ## Current Stage
-Having processed the data for this purpose, currently working on improving graph output readability and including both type and token frequency visualizations.
+Having processed the data for this purpose, currently working on implementing readable graph output and including both type and token frequency visualizations.
+
+## Next Steps
+After implementation of type and token frequency graphs and data output, next will be to run frequency traces on the 3 target clusters for the top 50 most prolific sources in the dataset as outlined in `source_article_counts.txt`.
