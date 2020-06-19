@@ -72,7 +72,7 @@ def populate_data(input_data_filename: str, target_words_filename: str, sourcena
             js_obj = js.loads(line)
             domain = js_obj['source']['domain']
 
-            if sourcename in domain:
+            if sourcename == domain:        # == vs in breaks script
                 date = (js_obj['published_at'].split())[0]
                 time_published = (js_obj['published_at'].split())[1]
                 article = js_obj['links']['permalink']
@@ -197,20 +197,26 @@ def graphing(input_list: list, target_words_filename: str, sourcename: str):
     token_freq = sb.lineplot(data=data_in_tok, dashes=False, palette="tab10", linewidth=2.0)
     token_freq.set(xlabel='Date', ylabel='Occurrences')
     token_freq.xaxis.set_major_locator(tk.MultipleLocator(7))
+    plt.yscale('log')
     plt.title(tok_title)
     plt.xticks(rotation=40)
+    plt.legend(bbox_to_anchor=(0., 1.02, 1., .102), loc=2, borderaxespad=0.)
 
     plt.subplot(212)
     data_in_type = pd.DataFrame(data=type_count_list, index=input_list[1], columns=input_list[0])
     type_freq = sb.lineplot(data=data_in_type, dashes=False, palette="tab10", linewidth=2.0)
     type_freq.set(xlabel='Date', ylabel='Number of Articles with Occurrence(s)')
     type_freq.xaxis.set_major_locator(tk.MultipleLocator(7))
+    plt.yscale('log')
     plt.title(type_title)
     plt.xticks(rotation=40)
-    plt.tight_layout()
+    plt.legend(bbox_to_anchor=(0., 1.02, 1., .102), loc=2, borderaxespad=0.)
 
-    plt.savefig(title, dpi=400)
-    plt.show()
+    graph = plt.gcf()
+    graph.set_size_inches((11, 8.5), forward=False)
+    graph.tight_layout()
+    graph.savefig(title, dpi=600)
+    # plt.show()
 
     return None
 
@@ -279,4 +285,4 @@ def main(input_data_filename: str, target_words_filename: str, sourcename: str):
 
     return None
 
-main('aylien_data.jsonl', 'cluster1_coronavirus.txt', 'linkedin.com')
+# main('aylien_data.jsonl', 'cluster1_coronavirus.txt', 'reuters.com')
