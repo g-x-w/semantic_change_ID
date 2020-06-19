@@ -16,16 +16,20 @@ with open('tracing_sources.txt') as sources:
 
 targets = ['cluster1_coronavirus.txt', 'cluster2_quarantine.txt', 'cluster3_fatality.txt']
 
+num_targets = len(targets)
+num_sources = len(source_list)
+
+
 print(" > > > TRACE BEGINS")
-source_count = 20
-for i in range(10):
-    print("\nBeginning source {} of 6 at {}".format(source_count+1, tt.ctime()))
+source_counter = 0
+for i in range(len(source_list)): #len(source_list)
+    print("\nBeginning source {} of {} at {}".format(source_counter+1, num_sources, tt.ctime()))
     cluster_counter = 0
     for j in range(3):
-        print("\tComputing cluster {} of 3...".format(cluster_counter+1))
+        print("\tComputing cluster {} of {}...".format(cluster_counter+1, num_targets))
         dp.main('aylien_data.jsonl', targets[j], source_list[i])
         cluster_counter += 1
-        print("\tCluster {} of 3 completed.".format(cluster_counter))
-    source_count += 1
-    print("Source {} of 6 completed at {}".format(source_count, tt.ctime()))
+        print("\tCluster {} of {} completed.".format(cluster_counter, num_targets))
+    source_counter += 1
+    print("Source {} of {} completed at {}".format(source_counter, num_sources, tt.ctime()))
 print("\n > > > TRACE CONCLUDED")
