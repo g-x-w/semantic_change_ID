@@ -5,7 +5,7 @@ import pandas as pd
 import csv as csv
 import time as tt
 import string as stng
-import dataset_processing as dp
+import dataset_processing_byline as dp
 import workspace as ws
 
 def pull_single_freq_data(target_word_file: str, input_data_file: str):

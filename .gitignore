@@ -5,11 +5,13 @@ test.py
 jsonl_reader.py
 jsonl_dates.py
 source_clean.py
+date_query.py
 graphing_test.py
 
 csv_out.csv
 csv_total_counts.csv
 bodies.txt
+tracing_sources.txt
 dates_list.txt
 workspace.txt
 target_data.txt
@@ -27,5 +29,6 @@ __pycache__/
 intermediate_data_May29/
 intermediate_data_June6/
 intermediate_data_June12/
+intermediate_data_June19/
 source_oriented/
 line_oriented/

@@ -2,6 +2,7 @@ import json as js
 import time as tt
 import re as re
 import matplotlib.pyplot as plt
+import matplotlib.ticker as tk
 import numpy as np
 import seaborn as sb
 import pandas as pd
@@ -132,11 +133,18 @@ def dataframe_setup(processed_input_data: list, sourcename: str):
         source_counts = {}
 
         for target in targets:
+            num_sources = 0
             for source in processed_data[date].keys():
                 if source not in source_counts.keys():
-                    source_counts[source] = []
-                source_counts[source].append(processed_data[date][source]['total count'][target])
-
+                    source_counts[source] = [[],[]]
+                source_counts[source][0].append(processed_data[date][source]['total count'][target])
+                for article in processed_data[date][source].keys():
+                    if article == 'total count':
+                        pass
+                    else:
+                        if processed_data[date][source][article][target] > 0:
+                            num_sources += 1
+            source_counts[source][1].append(num_sources)
         source_count_list.append(source_counts)
 
     output = [targets, date_list, source_count_list]
@@ -154,6 +162,55 @@ def graphing(input_list: list, target_words_filename: str, sourcename: str):
         Input: list from dataframe_setup in format [[targets], [dates], [{sources:[counts]}]]
         Output: None and graphs in .png format
     '''
+    title = "{}_{}_FullTrace.png".format(sourcename, target_words_filename)
+    tok_title = "Token Frequency for {} from {}".format(target_words_filename, sourcename)
+    type_title = "Type Frequency for {} from {}".format(target_words_filename, sourcename)
+
+    fig, ax = plt.subplots()
+    sb.set(style="whitegrid")
+
+    tok_count_list = []
+    for i in range(len(input_list[2])):
+        for key in input_list[2][i].keys():
+            tok_count_list.append(input_list[2][i][key][0])
+
+    type_count_list = []
+    for i in range(len(input_list[2])):
+        for key in input_list[2][i].keys():
+            type_count_list.append(input_list[2][i][key][1])
+
+    num_tokens = len(tok_count_list[0])
+    earliest = min(input_list[1])
+    latest = max(input_list[1])
+    daterange = pd.date_range(start=earliest, end=latest)
+
+    for date in daterange:
+        if str(date).split()[0] not in input_list[1]:
+            input_list[1].append(str(date).split()[0])
+            tok_count_list.append([0]*num_tokens)
+            type_count_list.append([0]*num_tokens)
+        else:
+            pass
+
+    plt.subplot(211)
+    data_in_tok = pd.DataFrame(data=tok_count_list, index=input_list[1], columns=input_list[0])
+    token_freq = sb.lineplot(data=data_in_tok, dashes=False, palette="tab10", linewidth=2.0)
+    token_freq.set(xlabel='Date', ylabel='Occurrences')
+    token_freq.xaxis.set_major_locator(tk.MultipleLocator(7))
+    plt.title(tok_title)
+    plt.xticks(rotation=40)
+
+    plt.subplot(212)
+    data_in_type = pd.DataFrame(data=type_count_list, index=input_list[1], columns=input_list[0])
+    type_freq = sb.lineplot(data=data_in_type, dashes=False, palette="tab10", linewidth=2.0)
+    type_freq.set(xlabel='Date', ylabel='Number of Articles with Occurrence(s)')
+    type_freq.xaxis.set_major_locator(tk.MultipleLocator(7))
+    plt.title(type_title)
+    plt.xticks(rotation=40)
+    plt.tight_layout()
+
+    plt.savefig(title, dpi=400)
+    plt.show()
 
     return None
 
@@ -180,7 +237,7 @@ def csv_output(input_list: list, sourcename: str):
 
     for i in range(len(input_list[1])):
         for j in range(len(input_list[0])):
-            rows[i].append(input_list[2][i][sourcename][j])
+            rows[i].append(input_list[2][i][sourcename][0][j])
     
     for i in range(len(rows)):
         rows[i].insert(0, input_list[1][i])
@@ -195,31 +252,31 @@ def csv_output(input_list: list, sourcename: str):
 
 
 def main(input_data_filename: str, target_words_filename: str, sourcename: str):
-    print("\nTOTAL TRACE START: {}".format(tt.ctime()))    
+    print("\n\tTOTAL TRACE START: {}".format(tt.ctime()))    
     main_start = tt.time()
 
-    print("\n\t{:25} {}".format('TIME POPULATION START:', tt.ctime()))
+    print("\n\t\t{:25} {}".format('TIME POPULATION START:', tt.ctime()))
     time_pop_start = tt.time()
     processed_data = populate_data(input_data_filename, target_words_filename, sourcename)
-    print("\t{:25} {:.2f}s".format('TIME POPULATION RUNTIME:', runtime(time_pop_start)))
+    print("\t\t{:25} {:.2f}s".format('TIME POPULATION RUNTIME:', runtime(time_pop_start)))
 
-    print("\n\t{:25} {}".format('DATAFRAME SETUP START:', tt.ctime()))
+    print("\n\t\t{:25} {}".format('DATAFRAME SETUP START:', tt.ctime()))
     dataframe_start = tt.time()
     dataframe = dataframe_setup(processed_data, sourcename)
-    print("\t{:25} {:.2f}μs".format('DATAFRAME SETUP RUNTIME:', 1000000*runtime(dataframe_start)))
+    print("\t\t{:25} {:.2f}μs".format('DATAFRAME SETUP RUNTIME:', 1000000*runtime(dataframe_start)))
     
-    print("\n\t{:25} {}".format('CSV OUTPUT START:', tt.ctime()))
+    print("\n\t\t{:25} {}".format('CSV OUTPUT START:', tt.ctime()))
     csv_start = tt.time()
     csv_output(dataframe, sourcename)
-    print("\t{:25} {:.2f}μs".format('CSV OUTPUT RUNTIME:', 1000000*runtime(csv_start)))
+    print("\t\t{:25} {:.2f}μs".format('CSV OUTPUT RUNTIME:', 1000000*runtime(csv_start)))
 
     # print("\n\tGRAPHING START: ", tt.ctime())
     # graph_start = tt.time()
     # graphing(dataframe, target_words_filename, sourcename)
     # print("\tGRAPHING RUNTIME: {:.2f}".format(runtime(graph_start)))
 
-    print("\nTOTAL TRACE RUNTIME: {:.2f}".format(runtime(main_start)))
+    print("\n\tTOTAL TRACE RUNTIME: {:.2f}".format(runtime(main_start)))
 
     return None
 
-main('../aylien_data.jsonl', '../cluster1_coronavirus.txt', 'canada.ca')
+# main('aylien_data.jsonl', 'cluster1_coronavirus.txt', 'canada.ca')
