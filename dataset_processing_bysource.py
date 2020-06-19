@@ -252,7 +252,7 @@ def csv_output(input_list: list, sourcename: str):
 
 
 def main(input_data_filename: str, target_words_filename: str, sourcename: str):
-    print("\n\tTOTAL TRACE START: {}".format(tt.ctime()))    
+    # print("\n\tTOTAL TRACE START: {}".format(tt.ctime()))     # Commented when running from main.py to clean up terminal output 
     main_start = tt.time()
 
     print("\n\t\t{:25} {}".format('TIME POPULATION START:', tt.ctime()))
@@ -270,13 +270,13 @@ def main(input_data_filename: str, target_words_filename: str, sourcename: str):
     csv_output(dataframe, sourcename)
     print("\t\t{:25} {:.2f}μs".format('CSV OUTPUT RUNTIME:', 1000000*runtime(csv_start)))
 
-    # print("\n\tGRAPHING START: ", tt.ctime())
-    # graph_start = tt.time()
-    # graphing(dataframe, target_words_filename, sourcename)
-    # print("\tGRAPHING RUNTIME: {:.2f}".format(runtime(graph_start)))
+    print("\n\t\tGRAPHING START: ", tt.ctime())
+    graph_start = tt.time()
+    graphing(dataframe, target_words_filename, sourcename)
+    print("\t\tGRAPHING RUNTIME: {:.2f}".format(runtime(graph_start)))
 
-    print("\n\tTOTAL TRACE RUNTIME: {:.2f}".format(runtime(main_start)))
+    print("\n\t\tTOTAL TRACE RUNTIME: {:.2f}".format(runtime(main_start)))
 
     return None
 
-# main('aylien_data.jsonl', 'cluster1_coronavirus.txt', 'canada.ca')
+main('aylien_data.jsonl', 'cluster1_coronavirus.txt', 'linkedin.com')

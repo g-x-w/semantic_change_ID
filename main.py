@@ -25,7 +25,7 @@ for i in range(6):
         print("\tComputing cluster {} of 3...".format(cluster_counter+1))
         dp.main('aylien_data.jsonl', targets[j], source_list[i])
         cluster_counter += 1
-        print("\t\tCluster {} of 3 completed.".format(cluster_counter))
+        print("\tCluster {} of 3 completed.".format(cluster_counter))
     source_count += 1
     print("Source {} of 6 completed at {}".format(source_count, tt.ctime()))
 print("\nTRACE CONCLUDED")
