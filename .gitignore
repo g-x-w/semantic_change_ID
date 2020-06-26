@@ -7,6 +7,7 @@ jsonl_dates.py
 source_clean.py
 date_query.py
 graphing_test.py
+sentiment_plot.py
 
 csv_out.csv
 csv_total_counts.csv
@@ -30,5 +31,8 @@ intermediate_data_May29/
 intermediate_data_June6/
 intermediate_data_June12/
 intermediate_data_June19/
+intermediate_data_June26/
 source_oriented/
 line_oriented/
+
+*.png

@@ -7,6 +7,8 @@ import numpy as np
 import seaborn as sb
 import pandas as pd
 import csv as csv
+import nltk as nltk
+import string as string
 
 def runtime(start):
     '''
@@ -95,9 +97,9 @@ def populate_data(input_data_filename: str, target_words_filename: str, sourcena
                         output_dict[date][domain]['total count'][term] += len(re.findall(term, body, re.IGNORECASE))
                     output_dict[date][domain][article][term] = len(re.findall(term, body, re.IGNORECASE))
 
-    output.write(str(output_dict))
-    output.close()
     processed_data = [targets, output_dict]
+    output.write(str(processed_data))
+    output.close()
     return processed_data
 
 
@@ -153,7 +155,7 @@ def dataframe_setup(processed_input_data: list, sourcename: str):
     return output
 
 
-def graphing(input_list: list, target_words_filename: str, sourcename: str):
+def graphing_type(input_list: list, target_words_filename: str, sourcename: str):
     '''
         (list, str, str) -> png image files
 
@@ -212,6 +214,9 @@ def graphing(input_list: list, target_words_filename: str, sourcename: str):
     plt.xticks(rotation=40)
     plt.legend(bbox_to_anchor=(0., 1.02, 1., .102), loc=2, borderaxespad=0.)
 
+    print(data_in_type)
+    print(data_in_tok)
+
     graph = plt.gcf()
     graph.set_size_inches((11, 8.5), forward=False)
     graph.tight_layout()
@@ -257,32 +262,282 @@ def csv_output(input_list: list, sourcename: str):
     return None
 
 
-def main(input_data_filename: str, target_words_filename: str, sourcename: str):
-    # print("\n\tTOTAL TRACE START: {}".format(tt.ctime()))     # Commented when running from main.py to clean up terminal output 
-    main_start = tt.time()
+def get_sentiment_ratings():
+    df = pd.read_csv('valence.csv')
+    relevant = df[['Word','V.Mean.Sum']]
+    words = df['Word'].tolist()
+    words[8289] = 'null'
+    ratings = df['V.Mean.Sum'].tolist()
+    valence_ratings = {}
 
-    print("\n\t\t{:25} {}".format('TIME POPULATION START:', tt.ctime()))
-    time_pop_start = tt.time()
-    processed_data = populate_data(input_data_filename, target_words_filename, sourcename)
-    print("\t\t{:25} {:.2f}s".format('TIME POPULATION RUNTIME:', runtime(time_pop_start)))
-
-    print("\n\t\t{:25} {}".format('DATAFRAME SETUP START:', tt.ctime()))
-    dataframe_start = tt.time()
-    dataframe = dataframe_setup(processed_data, sourcename)
-    print("\t\t{:25} {:.2f}μs".format('DATAFRAME SETUP RUNTIME:', 1000000*runtime(dataframe_start)))
+    for i in range(len(words)):
+        valence_ratings[words[i]] = ratings[i]
     
-    print("\n\t\t{:25} {}".format('CSV OUTPUT START:', tt.ctime()))
-    csv_start = tt.time()
-    csv_output(dataframe, sourcename)
-    print("\t\t{:25} {:.2f}μs".format('CSV OUTPUT RUNTIME:', 1000000*runtime(csv_start)))
+    return(valence_ratings)
 
-    print("\n\t\tGRAPHING START: ", tt.ctime())
-    graph_start = tt.time()
-    graphing(dataframe, target_words_filename, sourcename)
-    print("\t\tGRAPHING RUNTIME: {:.2f}".format(runtime(graph_start)))
 
-    print("\n\t\tTOTAL TRACE RUNTIME: {:.2f}".format(runtime(main_start)))
+def populate_data_sentiment(input_data_filename: str, target_words_filename: str, sourcename: str, valence_ratings: dict):
+    '''
+        (str, str, str) -> [[str],{{{{str: int}}}}
+
+        Takes JSON lines file and returns list with queried targets 
+        and quadruple-nested dictionary of processed data
+
+        Input: filenames of input dataset and target words .txt file and sourcename to query
+        Output:
+        {
+            word1: {date1: [val, val, val, val], date2: [val, val, val, val]}, 
+            word2: {date1: [val, val, val, val], date2: [val, val, val, val]}, 
+            ... 
+        }
+    '''
+
+    output = open("output_data_full.txt", "w", encoding="utf-8")
+    output_dict = {}
+    targets = []
+
+    stopwords = set(nltk.corpus.stopwords.words('english'))
+
+    with open(target_words_filename) as targetstream:
+        for line in targetstream.readlines():
+            targets.append(line.strip())
+    
+    for target in targets:
+        output_dict[target] = {}
+
+    with open(input_data_filename) as datastream:
+        for line in datastream:
+            js_obj = js.loads(line)
+            domain = js_obj['source']['domain']
+
+            if sourcename == domain:       
+                date = (js_obj['published_at'].split())[0]
+                body = js_obj['body']
+
+                for target in targets:
+                    if date not in output_dict[target].keys():
+                        output_dict[target][date] = []
+
+                    if re.search(target, body, re.IGNORECASE):
+                        body2 = nltk.tokenize.sent_tokenize(body)
+
+                        for i in range(len(body2)):
+                            if re.search(target, body2[i], re.IGNORECASE):
+                                cleaned = []
+                                body2[i] = nltk.tokenize.word_tokenize(body2[i])
+
+                                for token in body2[i]:
+                                    if token not in stopwords and token not in string.punctuation:
+                                        cleaned.append(token)
+
+                                valence = 0
+                                count = 0
+                                for word in cleaned:
+                                    if len(word) <= 2:
+                                        query = word
+                                    elif word[-1] == 's' and len(word) > 2:
+                                        query = word + '?'
+                                    elif word[-1] != 's' and len(word) > 2:
+                                        query = word +'s?'
+
+                                    for key in valence_ratings.keys():
+                                        if re.search(query, key, re.IGNORECASE):
+                                            valence += valence_ratings[key]
+                                            count += 1
+                                
+                                if count > 0:
+                                    output_dict[target][date].append(round(valence/count, 3))
+                    else: 
+                        output_dict[target][date].append(np.nan)
+    
+    processed_data = [targets, output_dict]
+    output.write(str(processed_data))
+    output.close()
+    return processed_data
+
+
+def dataframe_setup_sentiment(processed_input_data: list, sourcename: str):
+    '''
+        (str, str) -> [[str],[str], [{str:[int]}]]
+        
+        Pulls relevant frequency traces from processed dataset output by populate_data
+        and cleans it up to prepare for dataframe formatting for graph generation
+
+        Input: processed dataset returned from dataset_processing.py
+        Output:
+        [
+            [target1, target2, target3, ..., targetn], 
+            [date1, date2, date3, ... , daten],
+            [
+                {source1: [word1day1_ct, word2day1_ct, ... , wordnday1_ct], 
+                source2: [word1day1_ct, word2day1_ct, ... , wordnday1_ct]},
+                {source1: [word1day2_ct, word2day2_ct, ... , wordnday2_ct], 
+                source2: [word1day2_ct, word2day2_ct, ... , wordnday2_ct]}
+            ]
+        ]
+    '''
+    processed_data = processed_input_data[1]
+    targets = processed_input_data[0]
+    date_list = []
+    value_list = []
+    token_list = []
+    daterange = pd.date_range(start='2019-11-01', end='2020-04-05')
+    file_out_name = '{}_dataframe_output.txt'.format(sourcename)
+    outfile = open(file_out_name, "w", encoding="utf-8")
+
+    for target in targets:
+        for date in daterange:
+            if str(date).split()[0] not in processed_data[target].keys():
+                processed_data[target][str(date).split()[0]] = [np.nan]
+
+    for target in targets:
+        for date in processed_data[target].keys():
+            if np.isnan(processed_data[target][date][0]):
+                value_list.append(np.nan)
+                date_list.append(date)
+                token_list.append(target)
+
+            elif not np.isnan(processed_data[target][date][0]):
+                for i in range(len(processed_data[target][date])):
+                    value_list.append(processed_data[target][date][i])
+                    date_list.append(date)
+                    token_list.append(target)
+
+    output = {'Dates': date_list, 'Tokens': token_list, 'Ratings': value_list}
+    outfile.write(str(output))
+    outfile.close()
+    return output
+
+
+def graphing_sentiment(input_list: list, sentiment_input: list, target_words_filename: str, sourcename: str):
+    '''
+        (list, str, str) -> png image files
+
+        DESCRIPTION HERE
+
+        Input: list from dataframe_setup in format [[targets], [dates], [{sources:[counts]}]]
+        Output: None and graphs in .png format
+    '''
+    title = "{}_{}_FullTrace.png".format(sourcename, target_words_filename)
+    tok_title = "Token Frequency for {} from {}".format(target_words_filename, sourcename)
+    sentiment_title = "Sentiment Plot for {} from {}".format(target_words_filename, sourcename)
+
+    fig, ax = plt.subplots()
+    sb.set(style="whitegrid")
+
+    tok_count_list = []
+    for i in range(len(input_list[2])):
+        for key in input_list[2][i].keys():
+            tok_count_list.append(input_list[2][i][key][0])
+
+    num_tokens = len(tok_count_list[0])
+    earliest = min(input_list[1])
+    latest = max(input_list[1])
+    daterange = pd.date_range(start=earliest, end=latest)
+
+    for date in daterange:
+        if str(date).split()[0] not in input_list[1]:
+            input_list[1].append(str(date).split()[0])
+            tok_count_list.append([0]*num_tokens)
+        else:
+            pass
+
+    plt.subplot(211)
+    data_in_tok = pd.DataFrame(data=tok_count_list, index=input_list[1], columns=input_list[0])
+    token_freq = sb.lineplot(data=data_in_tok, dashes=False, palette="tab10", linewidth=2.0)
+    token_freq.set(xlabel='Date', ylabel='Occurrences')
+    token_freq.xaxis.set_major_locator(tk.MultipleLocator(7))
+    plt.yscale('log')
+    plt.title(tok_title)
+    plt.xticks(rotation=40)
+
+    plt.subplot(212)
+    data_in_sentiment = pd.DataFrame(data=sentiment_input)
+    data_in_sentiment.sort_values(by=['Dates'], ascending=True, inplace=True)
+    sentiment = sb.pointplot(x='Dates', y='Ratings', hue='Tokens', dashes=False, palette="tab10", linewidth=2.0, data=data_in_sentiment)
+    sentiment.set(xlabel='Date', ylabel='Mean Sentiment Rating')
+    plt.title(sentiment_title)
+
+    plt.xticks(rotation=80)
+    # for label in sentiment.xaxis.get_ticklabels()[::2]:
+    #     label.set_visible(False)
+    n = 7
+    [l.set_visible(False) for (i,l) in enumerate(sentiment.xaxis.get_ticklabels()) if i % n != 0]
+
+    graph = plt.gcf()
+    graph.set_size_inches((11, 8.5), forward=False)
+    graph.tight_layout()
+    graph.savefig(title, dpi=600)
 
     return None
 
-# main('aylien_data.jsonl', 'cluster1_coronavirus.txt', 'reuters.com')
+
+def main(input_data_filename: str, target_words_filename: str, sourcename: str, trace: int): # 1 = sentiment
+    # print("\n\tTOTAL TRACE START: {}".format(tt.ctime()))     # Commented when running from main.py to clean up terminal output 
+    main_start = tt.time()
+
+    if trace == 0:
+        print("\n\t\t{:25} {}".format('TIME POPULATION START:', tt.ctime()))
+        time_pop_start = tt.time()
+        processed_data = populate_data(input_data_filename, target_words_filename, sourcename)
+        print("\t\t{:25} {:.2f}s".format('TIME POPULATION RUNTIME:', runtime(time_pop_start)))
+
+        print("\n\t\t{:25} {}".format('DATAFRAME SETUP START:', tt.ctime()))
+        dataframe_start = tt.time()
+        dataframe = dataframe_setup(processed_data, sourcename)
+        print("\t\t{:25} {:.2f}μs".format('DATAFRAME SETUP RUNTIME:', 1000000*runtime(dataframe_start)))
+        
+        print("\n\t\t{:25} {}".format('CSV OUTPUT START:', tt.ctime()))
+        csv_start = tt.time()
+        csv_output(dataframe, sourcename)
+        print("\t\t{:25} {:.2f}μs".format('CSV OUTPUT RUNTIME:', 1000000*runtime(csv_start)))
+
+        print("\n\t\tGRAPHING START: ", tt.ctime())
+        graph_start = tt.time()
+        graphing_type(dataframe, target_words_filename, sourcename)
+        print("\t\tGRAPHING RUNTIME: {:.2f}".format(runtime(graph_start)))
+
+        print("\n\t\tTOTAL TRACE RUNTIME: {:.2f}".format(runtime(main_start)))
+    
+    elif trace == 1:
+        print("\n\t\t{:25} {}".format('TIME POPULATION START:', tt.ctime()))
+        time_pop_start = tt.time()
+        processed_data = populate_data(input_data_filename, target_words_filename, sourcename)
+        print("\t\t{:25} {:.2f}s".format('TIME POPULATION RUNTIME:', runtime(time_pop_start)))
+
+        print("\n\t\t{:25} {}".format('DATAFRAME SETUP START:', tt.ctime()))
+        dataframe_start = tt.time()
+        dataframe = dataframe_setup(processed_data, sourcename)
+        print("\t\t{:25} {:.2f}μs".format('DATAFRAME SETUP RUNTIME:', 1000000*runtime(dataframe_start)))
+        
+        print("\n\t\t{:25} {}".format('CSV OUTPUT START:', tt.ctime()))
+        csv_start = tt.time()
+        csv_output(dataframe, sourcename)
+        print("\t\t{:25} {:.2f}μs".format('CSV OUTPUT RUNTIME:', 1000000*runtime(csv_start)))
+
+        print("\n\t\t{:25} {}".format('KUPERMAN TRACE START:', tt.ctime()))
+        sentiment_start = tt.time()
+        valences = get_sentiment_ratings()
+        print("\t\t{:25} {:.2f}s".format('KUPERMAN TRACE RUNTIME:', runtime(sentiment_start)))
+
+        print("\n\t\t{:25} {}".format('SENTIMENT DATA START:', tt.ctime()))
+        sent_pop_start = tt.time()
+        processed_sent_data = populate_data_sentiment(input_data_filename, target_words_filename, sourcename, valences)
+        print("\t\t{:25} {:.2f}s".format('SENTIMENT DATA RUNTIME:', runtime(sent_pop_start)))
+
+        print("\n\t\t{:25} {}".format('SENTI FRAME START:', tt.ctime()))
+        sent_frame_start = tt.time()
+        sent_frame = dataframe_setup_sentiment(processed_sent_data, sourcename)
+        print("\t\t{:25} {:.2f}s".format('SENTI FRAME RUNTIME:', runtime(sent_frame_start)))
+
+        print("\n\t\tGRAPHING START: ", tt.ctime())
+        graph_start = tt.time()
+        graphing_sentiment(dataframe, sent_frame, target_words_filename, sourcename)
+        print("\t\tGRAPHING RUNTIME: {:.2f}".format(runtime(graph_start)))
+
+        print("\n\t\tTOTAL TRACE RUNTIME: {:.2f}".format(runtime(main_start)))
+
+    return None
+
+# main('aylien_data.jsonl', 'cluster1_coronavirus.txt', 'canada.ca', 1)
+
