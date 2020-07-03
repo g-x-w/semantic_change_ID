@@ -9,6 +9,7 @@ import pandas as pd
 import csv as csv
 import nltk as nltk
 import string as string
+import ast as ast
 
 def runtime(start):
     '''
@@ -263,17 +264,22 @@ def csv_output(input_list: list, sourcename: str):
 
 
 def get_sentiment_ratings():
-    df = pd.read_csv('valence.csv')
-    relevant = df[['Word','V.Mean.Sum']]
-    words = df['Word'].tolist()
-    words[8289] = 'null'
-    ratings = df['V.Mean.Sum'].tolist()
-    valence_ratings = {}
+    # df = pd.read_csv('valence.csv')
+    # relevant = df[['Word','V.Mean.Sum']]
+    # words = df['Word'].tolist()
+    # words[8289] = 'null'
+    # ratings = df['V.Mean.Sum'].tolist()
+    # valence_ratings = {}
 
-    for i in range(len(words)):
-        valence_ratings[words[i]] = ratings[i]
+    # for i in range(len(words)):
+    #     valence_ratings[words[i]] = ratings[i]
     
-    return(valence_ratings)
+    # return(valence_ratings)
+
+    with open('valence_ratings_adjusted.txt', "r") as in_file:
+        valence_ratings = ast.literal_eval(in_file.read())
+
+    return (valence_ratings)
 
 
 def populate_data_sentiment(input_data_filename: str, target_words_filename: str, sourcename: str, valence_ratings: dict):
@@ -285,11 +291,12 @@ def populate_data_sentiment(input_data_filename: str, target_words_filename: str
 
         Input: filenames of input dataset and target words .txt file and sourcename to query
         Output:
-        {
-            word1: {date1: [val, val, val, val], date2: [val, val, val, val]}, 
+        [
+            [target1, target2, target3],
+            {word1: {date1: [val, val, val, val], date2: [val, val, val, val]}, 
             word2: {date1: [val, val, val, val], date2: [val, val, val, val]}, 
-            ... 
-        }
+            ...} 
+        ]
     '''
 
     output = open("output_data_full.txt", "w", encoding="utf-8")
@@ -304,6 +311,8 @@ def populate_data_sentiment(input_data_filename: str, target_words_filename: str
     
     for target in targets:
         output_dict[target] = {}
+    
+    article_count = 0
 
     with open(input_data_filename) as datastream:
         for line in datastream:
@@ -313,16 +322,18 @@ def populate_data_sentiment(input_data_filename: str, target_words_filename: str
             if sourcename == domain:       
                 date = (js_obj['published_at'].split())[0]
                 body = js_obj['body']
-
                 for target in targets:
                     if date not in output_dict[target].keys():
                         output_dict[target][date] = []
 
                     if re.search(target, body, re.IGNORECASE):
+                        article_count += 1
+                        print('Target found in article:', article_count, 'Target:', target)
                         body2 = nltk.tokenize.sent_tokenize(body)
 
-                        for i in range(len(body2)):
+                        for i in range(len(body2)):     # for each sentence in the body
                             if re.search(target, body2[i], re.IGNORECASE):
+                                print('Target found in sentence')
                                 cleaned = []
                                 body2[i] = nltk.tokenize.word_tokenize(body2[i])
 
@@ -331,8 +342,8 @@ def populate_data_sentiment(input_data_filename: str, target_words_filename: str
                                         cleaned.append(token)
 
                                 valence = 0
-                                count = 0
-                                for word in cleaned:
+                                # count = 0
+                                for word in cleaned:    # for each word in the processed sentence
                                     if len(word) <= 2:
                                         query = word
                                     elif word[-1] == 's' and len(word) > 2:
@@ -341,12 +352,17 @@ def populate_data_sentiment(input_data_filename: str, target_words_filename: str
                                         query = word +'s?'
 
                                     for key in valence_ratings.keys():
-                                        if re.search(query, key, re.IGNORECASE):
-                                            valence += valence_ratings[key]
-                                            count += 1
+                                        if re.search(query, key, re.IGNORECASE) and abs(valence_ratings[key]) > abs(valence):
+                                            print('Valence updated')
+                                            valence = valence_ratings[key]
+                                            # valence += valence_ratings[key]
+                                            # count += 1
                                 
-                                if count > 0:
-                                    output_dict[target][date].append(round(valence/count, 3))
+                                if valence != 0:
+                                    output_dict[target][date].append(valence)
+
+                                # if count > 0:
+                                #     output_dict[target][date].append(round(valence/count, 3))
                     else: 
                         output_dict[target][date].append(np.nan)
     
@@ -381,7 +397,16 @@ def dataframe_setup_sentiment(processed_input_data: list, sourcename: str):
     date_list = []
     value_list = []
     token_list = []
-    daterange = pd.date_range(start='2019-11-01', end='2020-04-05')
+
+    min_parse = []
+    max_parse = []
+    for key in processed_input_data[1].keys():
+        min_parse.append(min(processed_input_data[1][key].keys()))
+        max_parse.append(max(processed_input_data[1][key].keys()))
+    mindate = min(min_parse)
+    maxdate = max(max_parse)
+
+    daterange = pd.date_range(start=mindate, end=maxdate)
     file_out_name = '{}_dataframe_output.txt'.format(sourcename)
     outfile = open(file_out_name, "w", encoding="utf-8")
 
@@ -418,12 +443,12 @@ def graphing_sentiment(input_list: list, sentiment_input: list, target_words_fil
         Input: list from dataframe_setup in format [[targets], [dates], [{sources:[counts]}]]
         Output: None and graphs in .png format
     '''
+    fig, ax = plt.subplots()
+    sb.set(style="whitegrid")
+
     title = "{}_{}_FullTrace.png".format(sourcename, target_words_filename)
     tok_title = "Token Frequency for {} from {}".format(target_words_filename, sourcename)
     sentiment_title = "Sentiment Plot for {} from {}".format(target_words_filename, sourcename)
-
-    fig, ax = plt.subplots()
-    sb.set(style="whitegrid")
 
     tok_count_list = []
     for i in range(len(input_list[2])):
@@ -454,20 +479,20 @@ def graphing_sentiment(input_list: list, sentiment_input: list, target_words_fil
     plt.subplot(212)
     data_in_sentiment = pd.DataFrame(data=sentiment_input)
     data_in_sentiment.sort_values(by=['Dates'], ascending=True, inplace=True)
-    sentiment = sb.pointplot(x='Dates', y='Ratings', hue='Tokens', dashes=False, palette="tab10", linewidth=2.0, data=data_in_sentiment)
+    sentiment = sb.pointplot(x='Dates', y='Ratings', hue='Tokens', dashes=False, palette="tab10", linewidth=2.0, data=data_in_sentiment, ci=None)
     sentiment.set(xlabel='Date', ylabel='Mean Sentiment Rating')
     plt.title(sentiment_title)
 
     plt.xticks(rotation=80)
-    # for label in sentiment.xaxis.get_ticklabels()[::2]:
-    #     label.set_visible(False)
     n = 7
     [l.set_visible(False) for (i,l) in enumerate(sentiment.xaxis.get_ticklabels()) if i % n != 0]
 
-    graph = plt.gcf()
-    graph.set_size_inches((11, 8.5), forward=False)
-    graph.tight_layout()
-    graph.savefig(title, dpi=600)
+    # graph = plt.gcf()
+    # graph.set_size_inches((11, 8.5), forward=False)
+    # graph.tight_layout()
+    # graph.savefig(title, dpi=600)
+
+    plt.show()
 
     return None
 
@@ -500,20 +525,20 @@ def main(input_data_filename: str, target_words_filename: str, sourcename: str, 
         print("\n\t\tTOTAL TRACE RUNTIME: {:.2f}".format(runtime(main_start)))
     
     elif trace == 1:
-        print("\n\t\t{:25} {}".format('TIME POPULATION START:', tt.ctime()))
-        time_pop_start = tt.time()
-        processed_data = populate_data(input_data_filename, target_words_filename, sourcename)
-        print("\t\t{:25} {:.2f}s".format('TIME POPULATION RUNTIME:', runtime(time_pop_start)))
+        # print("\n\t\t{:25} {}".format('TIME POPULATION START:', tt.ctime()))
+        # time_pop_start = tt.time()
+        # processed_data = populate_data(input_data_filename, target_words_filename, sourcename)
+        # print("\t\t{:25} {:.2f}s".format('TIME POPULATION RUNTIME:', runtime(time_pop_start)))
 
-        print("\n\t\t{:25} {}".format('DATAFRAME SETUP START:', tt.ctime()))
-        dataframe_start = tt.time()
-        dataframe = dataframe_setup(processed_data, sourcename)
-        print("\t\t{:25} {:.2f}μs".format('DATAFRAME SETUP RUNTIME:', 1000000*runtime(dataframe_start)))
+        # print("\n\t\t{:25} {}".format('DATAFRAME SETUP START:', tt.ctime()))
+        # dataframe_start = tt.time()
+        # dataframe = dataframe_setup(processed_data, sourcename)
+        # print("\t\t{:25} {:.2f}μs".format('DATAFRAME SETUP RUNTIME:', 1000000*runtime(dataframe_start)))
         
-        print("\n\t\t{:25} {}".format('CSV OUTPUT START:', tt.ctime()))
-        csv_start = tt.time()
-        csv_output(dataframe, sourcename)
-        print("\t\t{:25} {:.2f}μs".format('CSV OUTPUT RUNTIME:', 1000000*runtime(csv_start)))
+        # print("\n\t\t{:25} {}".format('CSV OUTPUT START:', tt.ctime()))
+        # csv_start = tt.time()
+        # csv_output(dataframe, sourcename)
+        # print("\t\t{:25} {:.2f}μs".format('CSV OUTPUT RUNTIME:', 1000000*runtime(csv_start)))
 
         print("\n\t\t{:25} {}".format('KUPERMAN TRACE START:', tt.ctime()))
         sentiment_start = tt.time()
@@ -525,19 +550,42 @@ def main(input_data_filename: str, target_words_filename: str, sourcename: str, 
         processed_sent_data = populate_data_sentiment(input_data_filename, target_words_filename, sourcename, valences)
         print("\t\t{:25} {:.2f}s".format('SENTIMENT DATA RUNTIME:', runtime(sent_pop_start)))
 
-        print("\n\t\t{:25} {}".format('SENTI FRAME START:', tt.ctime()))
-        sent_frame_start = tt.time()
-        sent_frame = dataframe_setup_sentiment(processed_sent_data, sourcename)
-        print("\t\t{:25} {:.2f}s".format('SENTI FRAME RUNTIME:', runtime(sent_frame_start)))
+        # print("\n\t\t{:25} {}".format('SENTI FRAME START:', tt.ctime()))
+        # sent_frame_start = tt.time()
+        # sent_frame = dataframe_setup_sentiment(processed_sent_data, sourcename)
+        # print("\t\t{:25} {:.2f}s".format('SENTI FRAME RUNTIME:', runtime(sent_frame_start)))
 
-        print("\n\t\tGRAPHING START: ", tt.ctime())
-        graph_start = tt.time()
-        graphing_sentiment(dataframe, sent_frame, target_words_filename, sourcename)
-        print("\t\tGRAPHING RUNTIME: {:.2f}".format(runtime(graph_start)))
+        # print("\n\t\tGRAPHING START: ", tt.ctime())
+        # graph_start = tt.time()
+        # graphing_sentiment(dataframe, sent_frame, target_words_filename, sourcename)
+        # print("\t\tGRAPHING RUNTIME: {:.2f}".format(runtime(graph_start)))
 
-        print("\n\t\tTOTAL TRACE RUNTIME: {:.2f}".format(runtime(main_start)))
+        # print("\n\t\tTOTAL TRACE RUNTIME: {:.2f}".format(runtime(main_start)))
 
     return None
 
-# main('aylien_data.jsonl', 'cluster1_coronavirus.txt', 'canada.ca', 1)
+main('aylien_data.jsonl', 'cluster1_coronavirus.txt', 'cnn.com', 1)
 
+##
+
+# nan = np.nan
+
+# temp = [['coronavirus', 'covid-19|covid 19', 'epidemic', 'pandemic', 'breakout'], {'coronavirus': {'2020-04-05': [nan], '2020-04-04': [nan], '2020-04-03': [nan], '2020-04-02': [nan], '2020-04-01': [nan, nan, nan], '2020-03-24': [nan], '2020-03-21': [nan], '2020-03-20': [-3.38, -3.38, -3.8], '2020-03-17': [-3.48], '2020-03-15': [nan], '2020-03-14': [-3.48], '2020-03-12': [nan], '2020-03-10': [-3.38], '2020-03-08': [nan], '2020-03-04': [nan], '2020-02-21': [-1.73], '2020-02-16': [nan], '2020-02-14': [-3.45], '2020-02-11': [-1.73, -2.82, 2.7], '2020-02-10': [-3.66, 2.05, -3.31], '2020-01-31': [-3.45]}, 'covid-19|covid 19': {'2020-04-05': [-3.45, 2.49, -3.53, -2.56, -2.71, -3.53], '2020-04-04': [-3.35], '2020-04-03': [-3.45], '2020-04-02': [-3.48], '2020-04-01': [-3.66, -3.66, -3.01, -3.45, 2.89, -3.04, -3.45, -2.87, -3.45, -3.45, -3.01], '2020-03-24': [-3.45], '2020-03-21': [-3.45, 2.83, -3.53], '2020-03-20': [-3.38, -3.38, -3.06, -3.45, -3.53, -3.8, -3.45], '2020-03-17': [-3.45, -3.48, -3.66, -3.16, -3.48], '2020-03-15': [-3.45, -3.45], '2020-03-14': [-3.48], '2020-03-12': [-3.45], '2020-03-10': [-3.38], '2020-03-08': [-3.45, 2.05, -3.45, -3.04], '2020-03-04': [-3.45], '2020-02-21': [-1.73], '2020-02-16': [2.7, -2.17], '2020-02-14': [nan], '2020-02-11': [nan], '2020-02-10': [nan], '2020-01-31': [nan]}, 'epidemic': {'2020-04-05': [nan], '2020-04-04': [nan], '2020-04-03': [nan], '2020-04-02': [nan], '2020-04-01': [nan, nan, nan], '2020-03-24': [nan], '2020-03-21': [nan], '2020-03-20': [nan, nan], '2020-03-17': [nan], '2020-03-15': [nan], '2020-03-14': [nan], '2020-03-12': [nan], '2020-03-10': [nan], '2020-03-08': [nan], '2020-03-04': [nan], '2020-02-21': [nan], '2020-02-16': [nan], '2020-02-14': [nan], '2020-02-11': [nan], '2020-02-10': [nan], '2020-01-31': [nan]}, 'pandemic': {'2020-04-05': [-3.45, 2.04, 2.49, -3.53, -3.53], '2020-04-04': [-3.35], '2020-04-03': [-3.45], '2020-04-02': [-3.48], '2020-04-01': [-3.66, -3.66, -2.87, nan], '2020-03-24': [-3.45], '2020-03-21': [-3.53], '2020-03-20': [-3.35, nan], '2020-03-17': [nan], '2020-03-15': [nan], '2020-03-14': [nan], '2020-03-12': [nan], '2020-03-10': [nan], '2020-03-08': [nan], '2020-03-04': [nan], '2020-02-21': [nan], '2020-02-16': [nan], '2020-02-14': [nan], '2020-02-11': [nan], '2020-02-10': [nan], '2020-01-31': [nan]}, 'breakout': {'2020-04-05': [nan], '2020-04-04': [nan], '2020-04-03': [nan], '2020-04-02': [nan], '2020-04-01': [nan, nan, nan], '2020-03-24': [nan], '2020-03-21': [nan], '2020-03-20': [nan, nan], '2020-03-17': [nan], '2020-03-15': [nan], '2020-03-14': [nan], '2020-03-12': [nan], '2020-03-10': [nan], '2020-03-08': [nan], '2020-03-04': [nan], '2020-02-21': [nan], '2020-02-16': [nan], '2020-02-14': [nan], '2020-02-11': [nan], '2020-02-10': [nan], '2020-01-31': [nan]}}]
+
+# sentiment_input = dataframe_setup_sentiment(temp, 'canada.ca')
+
+# fig, ax = plt.subplots()
+# sb.set(style="whitegrid")
+
+# plt.subplot(212)
+# data_in_sentiment = pd.DataFrame(data=sentiment_input)
+# data_in_sentiment.sort_values(by=['Dates'], ascending=True, inplace=True)
+# sentiment = sb.pointplot(x='Dates', y='Ratings', hue='Tokens', dashes=False, palette="tab10", linewidth=2.0, data=data_in_sentiment, ci=None)
+# sentiment.set(xlabel='Date', ylabel='Mean Sentiment Rating')
+
+# plt.xticks(rotation=80)
+# n = 7
+# [l.set_visible(False) for (i,l) in enumerate(sentiment.xaxis.get_ticklabels()) if i % n != 0]
+
+
+# plt.show()
