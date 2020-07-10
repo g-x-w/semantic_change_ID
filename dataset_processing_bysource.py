@@ -282,6 +282,12 @@ def get_sentiment_ratings():
     return (valence_ratings)
 
 
+def get_pos_tag(word_input):
+    tag = nltk.pos_tag([word])[0][1][0].upper()
+    tag_dict = {"J": nltk.corpus.wordnet.ADJ, "N": nltk.corpus.wordnet.NOUN, "V": nltk.corpus.wordnet.VERB, "R": nltk.corpus.wordnet.ADV}
+    return tag_dict.get(tag, nltk.corpus.wordnet.NOUN)
+
+
 def populate_data_sentiment(input_data_filename: str, target_words_filename: str, sourcename: str, valence_ratings: dict):
     '''
         (str, str, str) -> [[str],{{{{str: int}}}}
@@ -338,7 +344,7 @@ def populate_data_sentiment(input_data_filename: str, target_words_filename: str
                                 body2[i] = nltk.tokenize.word_tokenize(body2[i])
 
                                 for token in body2[i]:
-                                    if token not in stopwords and token not in string.punctuation:
+                                    if token.lower() not in stopwords and token not in string.punctuation:
                                         cleaned.append(token)
 
                                 valence = 0
