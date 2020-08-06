@@ -70,11 +70,11 @@ def populate_data(input_data_filename: str, target_words_filename: str, sourcena
     output_dict = {}
     targets = []
 
-    with open(target_words_filename) as targetstream:
+    with open(target_words_filename, "r") as targetstream:
         for line in targetstream.readlines():
             targets.append(line.strip())
 
-    with open(input_data_filename) as datastream:
+    with open(input_data_filename, "r") as datastream:
         for line in datastream:
             js_obj = js.loads(line)
             domain = js_obj['source']['domain']
@@ -331,7 +331,7 @@ def populate_data_sentiment(input_data_filename: str, target_words_filename: str
 
     stopwords = set(nltk.corpus.stopwords.words('english'))
 
-    with open(target_words_filename) as targetstream:
+    with open(target_words_filename, "r") as targetstream:
         for line in targetstream.readlines():
             targets.append(line.strip())
     
@@ -340,7 +340,7 @@ def populate_data_sentiment(input_data_filename: str, target_words_filename: str
     
     article_count = 0
 
-    with open(input_data_filename) as datastream:
+    with open(input_data_filename, "r") as datastream:
         for line in datastream:
             article_count += 1
             js_obj = js.loads(line)
@@ -380,7 +380,7 @@ def populate_data_sentiment(input_data_filename: str, target_words_filename: str
                                         check = nltk.WordNetLemmatizer().lemmatize(word[0], get_pos_tag(word[1][0].upper()))
                                         lemmatized.append(check)
 
-                                    match_check = []
+                                    # match_check = []
                                     valence = 0
 
                                     for lemma in lemmatized:
@@ -508,7 +508,7 @@ def graphing_sentiment(token_input: list, sentiment_input: list, target_words_fi
     graph.set_size_inches((16, 8.5), forward=False)
     graph.tight_layout()
     
-    plt.show()
+    # plt.show()
     graph.savefig(title, dpi=400)
     plt.close('all')
 
@@ -583,4 +583,4 @@ def main(input_data_filename: str, target_words_filename: str, sourcename: str, 
     return None
 
 
-main('aylien_data.jsonl', 'cluster2_quarantine.txt', 'fortune.com', 1)
+# main('aylien_data_july.jsonl', 'cluster2_quarantine.txt', 'forbes.com', 1)

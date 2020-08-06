@@ -8,6 +8,8 @@ source_clean.py
 date_query.py
 graphing_test.py
 sentiment_plot.py
+dataset_processing_byline.py
+graphing.py
 
 csv_out.csv
 csv_total_counts.csv
