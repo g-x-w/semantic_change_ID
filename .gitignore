@@ -1,6 +1,6 @@
 aylien_data.jsonl
 scratch.py
-# workspace.py
+workspace.py
 test.py
 jsonl_reader.py
 jsonl_dates.py
@@ -25,6 +25,8 @@ scratch.txt
 scratch2.txt
 
 target_data.json
+subsample.jsonl
+aylien_data_july.jsonl
 
 __pycache__/
 intermediate_data_May29/
@@ -35,6 +37,8 @@ intermediate_data_June26/
 intermediate_data_July10/
 intermediate_data_July11/
 intermediate_data_July12/
+intermediate_data_July17/
+intermediate_data_Aug5/
 source_oriented/
 line_oriented/
 

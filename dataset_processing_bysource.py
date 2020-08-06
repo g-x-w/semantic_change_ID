@@ -10,6 +10,11 @@ import csv as csv
 import nltk as nltk
 import string as string
 import ast as ast
+import datetime as dt
+
+global collapse_week
+
+collapse_week = 1
 
 def runtime(start):
     '''
@@ -76,26 +81,30 @@ def populate_data(input_data_filename: str, target_words_filename: str, sourcena
 
             if sourcename == domain:        # == vs in breaks script
                 date = (js_obj['published_at'].split())[0]
-                time_published = (js_obj['published_at'].split())[1]
-                article = js_obj['links']['permalink']
-                body = js_obj['body']
+                date_temp = date.split('-')
+                if collapse_week == 1 and dt.datetime(int(date_temp[0]), int(date_temp[1]), int(date_temp[2])).weekday() > 4:
+                    pass
+                else:
+                    time_published = (js_obj['published_at'].split())[1]
+                    article = js_obj['links']['permalink']
+                    body = js_obj['body']
 
-                if date not in output_dict.keys():
-                    output_dict[date] = {}
-                if domain not in output_dict[date].keys():
-                    output_dict[date][domain] = {}
-                if article not in output_dict[date][domain].keys():
-                    output_dict[date][domain][article] = {}
-                if 'total count' not in output_dict[date][domain].keys():
-                    output_dict[date][domain]['total count'] = {}
-                output_dict[date][domain][article]['Time Published'] = time_published
+                    if date not in output_dict.keys():
+                        output_dict[date] = {}
+                    if domain not in output_dict[date].keys():
+                        output_dict[date][domain] = {}
+                    if article not in output_dict[date][domain].keys():
+                        output_dict[date][domain][article] = {}
+                    if 'total count' not in output_dict[date][domain].keys():
+                        output_dict[date][domain]['total count'] = {}
+                    output_dict[date][domain][article]['Time Published'] = time_published
 
-                for term in targets:
-                    if term not in output_dict[date][domain]['total count'].keys():
-                        output_dict[date][domain]['total count'][term] = len(re.findall(term, body, re.IGNORECASE))
-                    else:
-                        output_dict[date][domain]['total count'][term] += len(re.findall(term, body, re.IGNORECASE))
-                    output_dict[date][domain][article][term] = len(re.findall(term, body, re.IGNORECASE))
+                    for term in targets:
+                        if term not in output_dict[date][domain]['total count'].keys():
+                            output_dict[date][domain]['total count'][term] = len(re.findall(term, body, re.IGNORECASE))
+                        else:
+                            output_dict[date][domain]['total count'][term] += len(re.findall(term, body, re.IGNORECASE))
+                        output_dict[date][domain][article][term] = len(re.findall(term, body, re.IGNORECASE))
 
     processed_data = [targets, output_dict]
     output.write(str(processed_data))
@@ -104,22 +113,19 @@ def populate_data(input_data_filename: str, target_words_filename: str, sourcena
 
 def dataframe_setup(processed_input_data: list, sourcename: str):
     '''
-        (str, str) -> [[str],[str], [{str:[int]}]]
-        
+        (str, str) -> [{str:[str], str:[str], str:[int]}, {str}, pd.DatetimeIndex]
+
         Pulls relevant frequency traces from processed dataset output by populate_data
-        and cleans it up to prepare for dataframe formatting for graph generation
+        and prepares for dataframe formatting for graph generation
 
         Input: processed dataset returned from dataset_processing.py
         Output:
         [
-            [target1, target2, target3, ..., targetn], 
-            [date1, date2, date3, ... , daten],
-            [
-                {source1: [word1day1_ct, word2day1_ct, ... , wordnday1_ct], 
-                source2: [word1day1_ct, word2day1_ct, ... , wordnday1_ct]},
-                {source1: [word1day2_ct, word2day2_ct, ... , wordnday2_ct], 
-                source2: [word1day2_ct, word2day2_ct, ... , wordnday2_ct]}
-            ]
+            {'Dates': [date1, date1, date1, date2, date2, ... , daten], 
+            'Tokens': [target1, target2, target3, target1, target2, target3 ..., targetn],
+            'Counts': [t1ct1, t2ct1, t3ct1, t1ct2, t2ct2, t3ct3 ...]},
+            {'RE1': word1, 'RE2': word2 ... },
+            pd.DatetimeIndex([])
         ]
     '''
     file_out_name = '{}_token_dataframe_output.txt'.format(sourcename)
@@ -158,6 +164,9 @@ def dataframe_setup(processed_input_data: list, sourcename: str):
     maxdate = max(processed_data.keys())
     daterange = pd.date_range(start=mindate, end=maxdate)
 
+    if collapse_week == 1:
+        daterange = [date for date in daterange if date.weekday() < 5]
+
     for word in targets:
         if word.find('(') != -1:
             cleaned_tokens[word] = word[0:word.find('(')] + '*'
@@ -170,14 +179,14 @@ def dataframe_setup(processed_input_data: list, sourcename: str):
                 count_list.append(source_count_list[i][key][0][j])
                 dates_full.append(date_list[i])
                 token_list.append(cleaned_tokens[targets[j]])
-
+    
     for date in daterange:
         if str(date).split()[0] not in dates_full:
             for k in cleaned_tokens.values():
                 dates_full.append(str(date).split()[0])
                 token_list.append(k)
                 count_list.append(0)
-
+ 
     output = [{'Dates': dates_full, 'Tokens': token_list, 'Counts': count_list}, cleaned_tokens, daterange]
     outfile.write(str(output))
     outfile.close()
@@ -199,7 +208,6 @@ def graphing_type(input_list: list, target_words_filename: str, sourcename: str)
     fig, ax = plt.subplots()
     sb.set(style="whitegrid")
 
-    tok_count_list = []
     for i in range(len(input_list[2])):
         for key in input_list[2][i].keys():
             tok_count_list.append(input_list[2][i][key][0])
@@ -317,7 +325,6 @@ def populate_data_sentiment(input_data_filename: str, target_words_filename: str
             ...} 
         ]
     '''
-
     output = open("population_data_sentiment.txt", "w", encoding="utf-8")
     output_dict = {}
     targets = []
@@ -341,51 +348,52 @@ def populate_data_sentiment(input_data_filename: str, target_words_filename: str
 
             if sourcename == domain:       
                 date = (js_obj['published_at'].split())[0]
+                date_temp = date.split('-')
                 body = js_obj['body']
-                for target in targets:
-                    if date not in output_dict[target].keys():
-                        output_dict[target][date] = []
+                if collapse_week == 1 and dt.datetime(int(date_temp[0]), int(date_temp[1]), int(date_temp[2])).weekday() > 4:
+                    pass
+                else:                
+                    for target in targets:
+                        if date not in output_dict[target].keys():
+                            output_dict[target][date] = []
 
-                    if re.search(target, body, re.IGNORECASE):
-                        print('Target found in article:', article_count, 'Target:', target)
-                        body2 = nltk.tokenize.sent_tokenize(body)
+                        if re.search(target, body, re.IGNORECASE):
+                            print('Target found in article:', article_count, 'Target:', target)
+                            body2 = nltk.tokenize.sent_tokenize(body)
 
-                        for i in range(len(body2)):     # for each sentence in the body
-                            if re.search(target, body2[i], re.IGNORECASE):
-                                cleaned = []
-                                temp = nltk.tag.pos_tag(nltk.tokenize.word_tokenize(body2[i]))   # tokenize by word and tag with nltk tag
-                                if (i+1 < len(body2)):
-                                    temp += nltk.tag.pos_tag(nltk.tokenize.word_tokenize(body2[i+1]))
-                                if (i-1 > -1):
-                                    temp += nltk.tag.pos_tag(nltk.tokenize.word_tokenize(body2[i-1]))
+                            for i in range(len(body2)):     # for each sentence in the body
+                                if re.search(target, body2[i], re.IGNORECASE):
+                                    cleaned = []
+                                    temp = nltk.tag.pos_tag(nltk.tokenize.word_tokenize(body2[i]))   # tokenize by word and tag with nltk tag
+                                    # if (i+1 < len(body2)):
+                                    #     temp += nltk.tag.pos_tag(nltk.tokenize.word_tokenize(body2[i+1]))
+                                    # if (i-1 > -1):
+                                    #     temp += nltk.tag.pos_tag(nltk.tokenize.word_tokenize(body2[i-1]))
 
-                                for token in temp:      # strip non-content context words
-                                    if token[0].lower() not in stopwords and token[0].lower() not in string.punctuation:
-                                        cleaned.append(token)
+                                    for token in temp:      # strip non-content context words
+                                        if token[0].lower() not in stopwords and token[0].lower() not in string.punctuation:
+                                            cleaned.append(token)
 
-                                lemmatized = []
+                                    lemmatized = []
 
-                                for word in cleaned:    # for each word in the processed sentence
-                                    check = nltk.WordNetLemmatizer().lemmatize(word[0], get_pos_tag(word[1][0].upper()))
-                                    lemmatized.append(check)
+                                    for word in cleaned:    # for each word in the processed sentence
+                                        check = nltk.WordNetLemmatizer().lemmatize(word[0], get_pos_tag(word[1][0].upper()))
+                                        lemmatized.append(check)
 
-                                match_check = []
-                                valence = 0
+                                    match_check = []
+                                    valence = 0
 
-                                for lemma in lemmatized:
-                                    for key in valence_ratings.keys():
-                                        if lemma == key:
-                                            # match_check.append(key)
-                                            if abs(valence_ratings[key]) > abs(valence):
-                                                valence = valence_ratings[key]
+                                    for lemma in lemmatized:
+                                        for key in valence_ratings.keys():
+                                            if lemma == key:
+                                                # match_check.append(key)
+                                                if abs(valence_ratings[key]) > abs(valence):
+                                                    valence = valence_ratings[key]
 
-                                # print(lemmatized, '\n\n', match_check)
-                                # input("\t\t\t\t\t\t\t\t\t\tEnter")
-
-                                if valence != 0:
-                                    output_dict[target][date].append(valence)
-                    else: 
-                        output_dict[target][date].append(np.nan)
+                                    if valence != 0:
+                                        output_dict[target][date].append(valence)
+                        else: 
+                            output_dict[target][date].append(np.nan)
     
     processed_data = [targets, output_dict]
     output.write(str(processed_data))
@@ -394,38 +402,22 @@ def populate_data_sentiment(input_data_filename: str, target_words_filename: str
 
 def dataframe_setup_sentiment(processed_input_data: list, sourcename: str, daterange: list):
     '''
-        (str, str) -> [[str],[str], [{str:[int]}]]
-        
-        Pulls relevant frequency traces from processed dataset output by populate_data
-        and cleans it up to prepare for dataframe formatting for graph generation
+        (str, str, list) -> {str:[str], str:[str], str:[int]}
+
+        Pulls relevant frequency traces from processed dataset output by populate_data_sentiment
+        and prepares for dataframe formatting 
 
         Input: processed dataset returned from dataset_processing.py
         Output:
-        [
-            [target1, target2, target3, ..., targetn], 
-            [date1, date2, date3, ... , daten],
-            [
-                {source1: [word1day1_ct, word2day1_ct, ... , wordnday1_ct], 
-                source2: [word1day1_ct, word2day1_ct, ... , wordnday1_ct]},
-                {source1: [word1day2_ct, word2day2_ct, ... , wordnday2_ct], 
-                source2: [word1day2_ct, word2day2_ct, ... , wordnday2_ct]}
-            ]
-        ]
+            {'Dates': [date1, date1, date1, date2, date2, ... , daten], 
+            'Tokens': [target1, target2, target3, target1, target2, target3 ..., targetn],
+            'Counts': [t1ct1, t2ct1, t3ct1, t1ct2, t2ct2, t3ct3 ...]},
     '''
     processed_data = processed_input_data[1]
     targets = processed_input_data[0]
     date_list = []
     value_list = []
     token_list = []
-
-    # min_parse = []
-    # max_parse = []
-    # for key in processed_input_data[1].keys():
-    #     min_parse.append(min(processed_input_data[1][key].keys()))
-    #     max_parse.append(max(processed_input_data[1][key].keys()))
-    # mindate = min(min_parse)
-    # maxdate = max(max_parse)
-    # daterange = pd.date_range(start=mindate, end=maxdate)
 
     file_out_name = '{}_sentiment_dataframe_output.txt'.format(sourcename)
     outfile = open(file_out_name, "w", encoding="utf-8")
@@ -437,17 +429,6 @@ def dataframe_setup_sentiment(processed_input_data: list, sourcename: str, dater
 
     for target in targets:
         for date in processed_data[target].keys():
-            # if np.isnan(processed_data[target][date][0]):
-            #     value_list.append(np.nan)
-            #     date_list.append(date)
-            #     if target.find('(') != -1:
-            #         temp = target[0:target.find('(')] + '*'
-            #         token_list.append(temp)
-            #     else:
-            #         token_list.append(target)
-
-            # elif not np.isnan(processed_data[target][date][0]):
-
             if len(processed_data[target][date]) == 1 and np.isnan(processed_data[target][date][0]):
                 value_list.append(np.nan)
                 date_list.append(date)
@@ -496,14 +477,20 @@ def graphing_sentiment(token_input: list, sentiment_input: list, target_words_fi
         palette[cleaned_tokens[key]] = colors[i]
         i += 1
 
+    if collapse_week == 0:
+        n = 7
+    elif collapse_week == 1:
+        n = 5
+
     ax1 = plt.subplot(211)
     data_in_tok = pd.DataFrame(data=token_input[0])
     data_in_tok.sort_values(by=['Dates'], ascending=True, inplace=True)
     token_freq = sb.lineplot(data=data_in_tok, x='Dates', y='Counts', hue='Tokens', dashes=False, palette=palette, linewidth=2.0, ci=None, ax=ax1)
     token_freq.set(xlabel='Date', ylabel='Occurrences')
-    token_freq.xaxis.set_major_locator(tk.MultipleLocator(7))
-    # plt.yscale('log')
+    token_freq.xaxis.set_major_locator(tk.MultipleLocator(n))
+    token_freq.xaxis.set_minor_locator(tk.MultipleLocator(1))
     ax1.set_title(tok_title)
+    ax1.margins(x=0)
     plt.xticks(rotation=40)
 
     ax2 = plt.subplot(212)
@@ -511,19 +498,17 @@ def graphing_sentiment(token_input: list, sentiment_input: list, target_words_fi
     data_in_sentiment.sort_values(by=['Dates'], ascending=True, inplace=True)
     sentiment = sb.pointplot(data=data_in_sentiment, x='Dates', y='Ratings', hue='Tokens', dashes=False, palette=palette, linewidth=2.0, ci=None, ax=ax2, scale=0.6)
     sentiment.set(xlabel='Date', ylabel='Mean Sentiment Rating')
-    # sentiment.xaxis.set_major_locator(tk.MultipleLocator(7))
     ax2.set_title(sentiment_title)
+    ax2.grid(True)
     plt.xticks(rotation=40)
     ax2.get_legend().remove()
-
-    n = 7
     [l.set_visible(False) for (i,l) in enumerate(sentiment.xaxis.get_ticklabels()) if i % n != 0]
 
     graph = plt.gcf()
-    graph.set_size_inches((14, 8.5), forward=False)
+    graph.set_size_inches((16, 8.5), forward=False)
     graph.tight_layout()
     
-    # plt.show()
+    plt.show()
     graph.savefig(title, dpi=400)
     plt.close('all')
 
@@ -598,4 +583,4 @@ def main(input_data_filename: str, target_words_filename: str, sourcename: str, 
     return None
 
 
-# main('aylien_data.jsonl', 'cluster2_quarantine.txt', 'inquirer.net', 1)
+main('aylien_data.jsonl', 'cluster2_quarantine.txt', 'fortune.com', 1)
