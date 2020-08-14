@@ -69,6 +69,8 @@ def populate_data(input_data_filename: str, target_words_filename: str, sourcena
     output = open("population_data_token.txt", "w", encoding="utf-8")
     output_dict = {}
     targets = []
+    line_count = 0
+    article_count = 0
 
     with open(target_words_filename, "r") as targetstream:
         for line in targetstream.readlines():
@@ -78,13 +80,16 @@ def populate_data(input_data_filename: str, target_words_filename: str, sourcena
         for line in datastream:
             js_obj = js.loads(line)
             domain = js_obj['source']['domain']
+            line_count += 1
 
             if sourcename == domain:        # == vs in breaks script
+                article_count += 1
                 date = (js_obj['published_at'].split())[0]
                 date_temp = date.split('-')
                 if collapse_week == 1 and dt.datetime(int(date_temp[0]), int(date_temp[1]), int(date_temp[2])).weekday() > 4:
                     pass
                 else:
+                    print('\t\tArticle from source found on line:', line_count, 'Number:', article_count, end='\r')
                     time_published = (js_obj['published_at'].split())[1]
                     article = js_obj['links']['permalink']
                     body = js_obj['body']
@@ -326,8 +331,11 @@ def populate_data_sentiment(input_data_filename: str, target_words_filename: str
         ]
     '''
     output = open("population_data_sentiment.txt", "w", encoding="utf-8")
-    output_dict = {}
+    output_dict_max = {}
+    output_dict_avg = {}
     targets = []
+    article_count = 0
+    line_count = 0
 
     stopwords = set(nltk.corpus.stopwords.words('english'))
 
@@ -336,13 +344,12 @@ def populate_data_sentiment(input_data_filename: str, target_words_filename: str
             targets.append(line.strip())
     
     for target in targets:
-        output_dict[target] = {}
-    
-    article_count = 0
+        output_dict_max[target] = {}
+        output_dict_avg[target] = {}
 
     with open(input_data_filename, "r") as datastream:
         for line in datastream:
-            article_count += 1
+            line_count += 1
             js_obj = js.loads(line)
             domain = js_obj['source']['domain']
 
@@ -352,50 +359,51 @@ def populate_data_sentiment(input_data_filename: str, target_words_filename: str
                 body = js_obj['body']
                 if collapse_week == 1 and dt.datetime(int(date_temp[0]), int(date_temp[1]), int(date_temp[2])).weekday() > 4:
                     pass
-                else:                
+                else:
+                    article_count += 1                
                     for target in targets:
-                        if date not in output_dict[target].keys():
-                            output_dict[target][date] = []
+                        if date not in output_dict_max[target].keys():
+                            output_dict_max[target][date] = []
+                        
+                        if date not in output_dict_avg[target].keys():
+                            output_dict_avg[target][date] = []
 
                         if re.search(target, body, re.IGNORECASE):
-                            print('Target found in article:', article_count, 'Target:', target)
+                            print('\t\tTarget found in article:', line_count, 'Article Number:', article_count, 'Target:', target, ' '*12, end='\r')
                             body2 = nltk.tokenize.sent_tokenize(body)
 
                             for i in range(len(body2)):     # for each sentence in the body
                                 if re.search(target, body2[i], re.IGNORECASE):
                                     cleaned = []
                                     temp = nltk.tag.pos_tag(nltk.tokenize.word_tokenize(body2[i]))   # tokenize by word and tag with nltk tag
-                                    # if (i+1 < len(body2)):
-                                    #     temp += nltk.tag.pos_tag(nltk.tokenize.word_tokenize(body2[i+1]))
-                                    # if (i-1 > -1):
-                                    #     temp += nltk.tag.pos_tag(nltk.tokenize.word_tokenize(body2[i-1]))
 
                                     for token in temp:      # strip non-content context words
                                         if token[0].lower() not in stopwords and token[0].lower() not in string.punctuation:
                                             cleaned.append(token)
 
                                     lemmatized = []
-
                                     for word in cleaned:    # for each word in the processed sentence
                                         check = nltk.WordNetLemmatizer().lemmatize(word[0], get_pos_tag(word[1][0].upper()))
                                         lemmatized.append(check)
 
-                                    # match_check = []
-                                    valence = 0
-
+                                    valence_max = 0
+                                    valence_avg = [0,0]
                                     for lemma in lemmatized:
                                         for key in valence_ratings.keys():
                                             if lemma == key:
-                                                # match_check.append(key)
-                                                if abs(valence_ratings[key]) > abs(valence):
-                                                    valence = valence_ratings[key]
-
-                                    if valence != 0:
-                                        output_dict[target][date].append(valence)
+                                                valence_avg[0] += valence_ratings[key]
+                                                valence_avg[1] += 1
+                                                if abs(valence_ratings[key]) > abs(valence_max):
+                                                    valence_max = valence_ratings[key]
+                                    if valence_max != 0:
+                                        output_dict_max[target][date].append(valence_max)
+                                    if valence_avg[1] != 0:
+                                        output_dict_avg[target][date].append(valence_avg[0]/valence_avg[1])
                         else: 
-                            output_dict[target][date].append(np.nan)
+                            output_dict_max[target][date].append(np.nan)
+                            output_dict_avg[target][date].append(np.nan)
     
-    processed_data = [targets, output_dict]
+    processed_data = [targets, output_dict_max, output_dict_avg]
     output.write(str(processed_data))
     output.close()
     return processed_data
@@ -413,10 +421,12 @@ def dataframe_setup_sentiment(processed_input_data: list, sourcename: str, dater
             'Tokens': [target1, target2, target3, target1, target2, target3 ..., targetn],
             'Counts': [t1ct1, t2ct1, t3ct1, t1ct2, t2ct2, t3ct3 ...]},
     '''
-    processed_data = processed_input_data[1]
+    processed_data_max = processed_input_data[1]
+    processed_data_avg = processed_input_data[2]
     targets = processed_input_data[0]
     date_list = []
-    value_list = []
+    value_list_max = []
+    value_list_avg = []
     token_list = []
 
     file_out_name = '{}_sentiment_dataframe_output.txt'.format(sourcename)
@@ -424,13 +434,16 @@ def dataframe_setup_sentiment(processed_input_data: list, sourcename: str, dater
 
     for target in targets:
         for date in daterange:
-            if str(date).split()[0] not in processed_data[target].keys():
-                processed_data[target][str(date).split()[0]] = [np.nan]
+            if str(date).split()[0] not in processed_data_max[target].keys():
+                processed_data_max[target][str(date).split()[0]] = [np.nan]
+            if str(date).split()[0] not in processed_data_avg[target].keys():
+                processed_data_avg[target][str(date).split()[0]] = [np.nan]
 
     for target in targets:
-        for date in processed_data[target].keys():
-            if len(processed_data[target][date]) == 1 and np.isnan(processed_data[target][date][0]):
-                value_list.append(np.nan)
+        for date in processed_data_max[target].keys():
+            if len(processed_data_max[target][date]) == 1 and np.isnan(processed_data_max[target][date][0]):
+                value_list_max.append(np.nan)
+                value_list_avg.append(np.nan)
                 date_list.append(date)
                 if target.find('(') != -1:
                     temp = target[0:target.find('(')] + '*'
@@ -439,8 +452,9 @@ def dataframe_setup_sentiment(processed_input_data: list, sourcename: str, dater
                     token_list.append(target)
 
             else:
-                for i in range(len(processed_data[target][date])):
-                    value_list.append(processed_data[target][date][i])
+                for i in range(len(processed_data_max[target][date])):
+                    value_list_max.append(processed_data_max[target][date][i])
+                    value_list_avg.append(processed_data_avg[target][date][i])
                     date_list.append(date)
                     if target.find('(') != -1:
                         temp = target[0:target.find('(')] + '*'
@@ -448,7 +462,7 @@ def dataframe_setup_sentiment(processed_input_data: list, sourcename: str, dater
                     else:
                         token_list.append(target)
     
-    output = {'Dates': date_list, 'Tokens': token_list, 'Ratings': value_list}
+    output = {'Dates': date_list, 'Tokens': token_list, 'Max Ratings': value_list_max, 'Avg Ratings': value_list_avg}
     outfile.write(str(output))
     outfile.close()
     return output
@@ -464,10 +478,10 @@ def graphing_sentiment(token_input: list, sentiment_input: list, target_words_fi
     '''
     title = "{}_{}_FullTrace.png".format(sourcename, target_words_filename)
     tok_title = "Token Frequency for {} from {}".format(target_words_filename, sourcename)
-    sentiment_title = "Sentiment Plot for {} from {}".format(target_words_filename, sourcename)
+    sentiment_title_max = "Sentiment Plot for {} from {} (Max Context Rating)".format(target_words_filename, sourcename)
+    sentiment_title_avg = "Sentiment Plot for {} from {} (Avg Context Rating)".format(target_words_filename, sourcename)
 
-    fig = plt.figure()
-    (ax1, ax2) = fig.subplots(nrows=2, ncols=1)
+    fig, axes = plt.subplots(3,1)
     sb.set(style="whitegrid")
     cleaned_tokens = token_input[1]
     colors = ['C0','C1','C2','C3','C4','C5','C6','C7', 'C8']
@@ -482,34 +496,42 @@ def graphing_sentiment(token_input: list, sentiment_input: list, target_words_fi
     elif collapse_week == 1:
         n = 5
 
-    ax1 = plt.subplot(211)
     data_in_tok = pd.DataFrame(data=token_input[0])
     data_in_tok.sort_values(by=['Dates'], ascending=True, inplace=True)
-    token_freq = sb.lineplot(data=data_in_tok, x='Dates', y='Counts', hue='Tokens', dashes=False, palette=palette, linewidth=2.0, ci=None, ax=ax1)
+    token_freq = sb.lineplot(data=data_in_tok, x='Dates', y='Counts', hue='Tokens', dashes=False, palette=palette, linewidth=2.0, ci=None, ax=axes[0])
     token_freq.set(xlabel='Date', ylabel='Occurrences')
     token_freq.xaxis.set_major_locator(tk.MultipleLocator(n))
     token_freq.xaxis.set_minor_locator(tk.MultipleLocator(1))
-    ax1.set_title(tok_title)
-    ax1.margins(x=0)
-    plt.xticks(rotation=40)
+    axes[0].set_title(tok_title)
+    axes[0].margins(x=0)
+    axes[0].grid(True)
+    axes[0].tick_params(axis='x', labelrotation=40)
 
-    ax2 = plt.subplot(212)
     data_in_sentiment = pd.DataFrame(data=sentiment_input)
     data_in_sentiment.sort_values(by=['Dates'], ascending=True, inplace=True)
-    sentiment = sb.pointplot(data=data_in_sentiment, x='Dates', y='Ratings', hue='Tokens', dashes=False, palette=palette, linewidth=2.0, ci=None, ax=ax2, scale=0.6)
-    sentiment.set(xlabel='Date', ylabel='Mean Sentiment Rating')
-    ax2.set_title(sentiment_title)
-    ax2.grid(True)
-    plt.xticks(rotation=40)
-    ax2.get_legend().remove()
-    [l.set_visible(False) for (i,l) in enumerate(sentiment.xaxis.get_ticklabels()) if i % n != 0]
+    sentiment_max = sb.pointplot(data=data_in_sentiment, x='Dates', y='Max Ratings', hue='Tokens', dashes=False, palette=palette, linewidth=2.0, ci=None, ax=axes[1], scale=0.6)
+    sentiment_max.set(xlabel='Date', ylabel='Mean Sentiment Rating (Context Maxima)')
+    axes[1].set_title(sentiment_title_max)
+    axes[1].grid(True)
+    axes[1].legend().set_visible(False)
+    axes[1].tick_params(axis='x', labelrotation=40)
+    [l.set_visible(False) for (i,l) in enumerate(sentiment_max.xaxis.get_ticklabels()) if i % n != 0]
 
-    graph = plt.gcf()
-    graph.set_size_inches((16, 8.5), forward=False)
-    graph.tight_layout()
+    data_in_sentiment = pd.DataFrame(data=sentiment_input)
+    data_in_sentiment.sort_values(by=['Dates'], ascending=True, inplace=True)
+    sentiment_avg = sb.pointplot(data=data_in_sentiment, x='Dates', y='Avg Ratings', hue='Tokens', dashes=False, palette=palette, linewidth=2.0, ci=None, ax=axes[2], scale=0.6)
+    sentiment_avg.set(xlabel='Date', ylabel='Mean Sentiment Rating (Context Mean)')
+    axes[2].set_title(sentiment_title_avg)
+    axes[2].grid(True)
+    axes[2].tick_params(axis='x', labelrotation=40)
+    axes[2].legend().set_visible(False)
+    [k.set_visible(False) for (j,k) in enumerate(sentiment_avg.xaxis.get_ticklabels()) if j % n != 0]
     
+    fig.set_size_inches((16,16), forward=False)
+    fig.tight_layout(pad=3.0)
+
+    plt.savefig(title, dpi=400)
     # plt.show()
-    graph.savefig(title, dpi=400)
     plt.close('all')
 
     return None
@@ -523,7 +545,7 @@ def main(input_data_filename: str, target_words_filename: str, sourcename: str, 
         print("\n\t\t{:25} {}".format('TIME POPULATION START:', tt.ctime()))
         time_pop_start = tt.time()
         processed_data = populate_data(input_data_filename, target_words_filename, sourcename)
-        print("\t\t{:25} {:.2f}s".format('TIME POPULATION RUNTIME:', runtime(time_pop_start)))
+        print("\n\t\t{:25} {:.2f}s".format('TIME POPULATION RUNTIME:', runtime(time_pop_start)))
 
         print("\n\t\t{:25} {}".format('DATAFRAME SETUP START:', tt.ctime()))
         dataframe_start = tt.time()
@@ -546,7 +568,7 @@ def main(input_data_filename: str, target_words_filename: str, sourcename: str, 
         print("\t\t{:25} {}".format('TIME POPULATION START:', tt.ctime()))
         time_pop_start = tt.time()
         processed_data = populate_data(input_data_filename, target_words_filename, sourcename)
-        print("\t\t{:25} {:.2f}s".format('TIME POPULATION RUNTIME:', runtime(time_pop_start)))
+        print("\n\t\t{:25} {:.2f}s".format('TIME POPULATION RUNTIME:', runtime(time_pop_start)))
 
         print("\n\t\t{:25} {}".format('DATAFRAME SETUP START:', tt.ctime()))
         dataframe_start = tt.time()
@@ -566,7 +588,7 @@ def main(input_data_filename: str, target_words_filename: str, sourcename: str, 
         print("\n\t\t{:25} {}".format('SENTIMENT DATA START:', tt.ctime()))
         sent_pop_start = tt.time()
         processed_sent_data = populate_data_sentiment(input_data_filename, target_words_filename, sourcename, valences)
-        print("\t\t{:25} {:.2f}s".format('SENTIMENT DATA RUNTIME:', runtime(sent_pop_start)))
+        print("\n\t\t{:25} {:.2f}s".format('SENTIMENT DATA RUNTIME:', runtime(sent_pop_start)))
 
         print("\n\t\t{:25} {}".format('SENTI FRAME START:', tt.ctime()))
         sent_frame_start = tt.time()
@@ -583,4 +605,4 @@ def main(input_data_filename: str, target_words_filename: str, sourcename: str, 
     return None
 
 
-# main('aylien_data_july.jsonl', 'cluster2_quarantine.txt', 'forbes.com', 1)
+# main('aylien_data.jsonl', 'cluster2_quarantine_canada.txt', 'canada.ca', 1)

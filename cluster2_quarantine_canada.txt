@@ -1,0 +1,3 @@
+physical distanc(?:e|ing)
+quarantin(?:e|ing)
+social distanc(?:e|ing)
