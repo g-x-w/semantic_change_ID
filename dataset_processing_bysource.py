@@ -27,7 +27,7 @@ def runtime(start):
     end_time = tt.time()
     return (end_time-start)
 
-def populate_data(input_data_filename: str, target_words_filename: str, sourcename: str):
+def populate_data(input_data_filename: str, target_words_filename: str, sourcename: str, timerange_start="0", timerange_end="a"):
     '''
         (str, str, str) -> [[str],{{{{str: int}}}}
 
@@ -67,6 +67,7 @@ def populate_data(input_data_filename: str, target_words_filename: str, sourcena
     '''
 
     output = open("population_data_token.txt", "w", encoding="utf-8")
+    turnover = open('{}_frequency_changepoint.txt'.format(sourcename), "w", encoding="utf-8")
     output_dict = {}
     targets = []
     line_count = 0
@@ -86,34 +87,50 @@ def populate_data(input_data_filename: str, target_words_filename: str, sourcena
                 article_count += 1
                 date = (js_obj['published_at'].split())[0]
                 date_temp = date.split('-')
-                if collapse_week == 1 and dt.datetime(int(date_temp[0]), int(date_temp[1]), int(date_temp[2])).weekday() > 4:
-                    pass
+                if date >= timerange_start and date <= timerange_end:
+                    if collapse_week == 1 and dt.datetime(int(date_temp[0]), int(date_temp[1]), int(date_temp[2])).weekday() > 4:
+                        pass
+                    else:
+                        print('\t\tArticle from source found on line:', line_count, 'Number:', article_count, end='\r')
+                        time_published = (js_obj['published_at'].split())[1]
+                        article = js_obj['links']['permalink']
+                        body = js_obj['body']
+
+                        if date not in output_dict.keys():
+                            output_dict[date] = {}
+                        if domain not in output_dict[date].keys():
+                            output_dict[date][domain] = {}
+                        if article not in output_dict[date][domain].keys():
+                            output_dict[date][domain][article] = {}
+                        if 'total count' not in output_dict[date][domain].keys():
+                            output_dict[date][domain]['total count'] = {}
+                        output_dict[date][domain][article]['Time Published'] = time_published
+
+                        for term in targets:
+                            if term not in output_dict[date][domain]['total count'].keys():
+                                output_dict[date][domain]['total count'][term] = len(re.findall(term, body, re.IGNORECASE))
+                            else:
+                                output_dict[date][domain]['total count'][term] += len(re.findall(term, body, re.IGNORECASE))
+                            output_dict[date][domain][article][term] = len(re.findall(term, body, re.IGNORECASE))
                 else:
-                    print('\t\tArticle from source found on line:', line_count, 'Number:', article_count, end='\r')
-                    time_published = (js_obj['published_at'].split())[1]
-                    article = js_obj['links']['permalink']
-                    body = js_obj['body']
-
-                    if date not in output_dict.keys():
-                        output_dict[date] = {}
-                    if domain not in output_dict[date].keys():
-                        output_dict[date][domain] = {}
-                    if article not in output_dict[date][domain].keys():
-                        output_dict[date][domain][article] = {}
-                    if 'total count' not in output_dict[date][domain].keys():
-                        output_dict[date][domain]['total count'] = {}
-                    output_dict[date][domain][article]['Time Published'] = time_published
-
-                    for term in targets:
-                        if term not in output_dict[date][domain]['total count'].keys():
-                            output_dict[date][domain]['total count'][term] = len(re.findall(term, body, re.IGNORECASE))
-                        else:
-                            output_dict[date][domain]['total count'][term] += len(re.findall(term, body, re.IGNORECASE))
-                        output_dict[date][domain][article][term] = len(re.findall(term, body, re.IGNORECASE))
+                    pass
+    
+    for date in sorted(output_dict.keys()):
+        if date == sorted(output_dict.keys())[0]:
+            curr_max = max(output_dict[date][sourcename]['total count'], key=output_dict[date][sourcename]['total count'].get)
+        else:
+            new_max = max(output_dict[date][sourcename]['total count'], key=output_dict[date][sourcename]['total count'].get)
+            if new_max != curr_max:
+                curr_max = new_max
+                turnover.write("\n" + date + "\n")
+                for key in output_dict[date][sourcename].keys():
+                    if key != 'total count' and output_dict[date][sourcename][key][curr_max] != 0:
+                        turnover.write(key + ":" + str(output_dict[date][sourcename][key]) + '\n')
 
     processed_data = [targets, output_dict]
     output.write(str(processed_data))
     output.close()
+    turnover.close()
     return processed_data
 
 def dataframe_setup(processed_input_data: list, sourcename: str):
@@ -314,7 +331,7 @@ def get_pos_tag(nltk_tag):
     tag_dict = {"J": nltk.corpus.wordnet.ADJ, "N": nltk.corpus.wordnet.NOUN, "V": nltk.corpus.wordnet.VERB, "R": nltk.corpus.wordnet.ADV}
     return tag_dict.get(nltk_tag, nltk.corpus.wordnet.NOUN)
 
-def populate_data_sentiment(input_data_filename: str, target_words_filename: str, sourcename: str, valence_ratings: dict):
+def populate_data_sentiment(input_data_filename: str, target_words_filename: str, sourcename: str, valence_ratings: dict, timerange_start="0", timerange_end="a"):
     '''
         (str, str, str) -> [[str],{{{{str: int}}}}
 
@@ -357,51 +374,54 @@ def populate_data_sentiment(input_data_filename: str, target_words_filename: str
                 date = (js_obj['published_at'].split())[0]
                 date_temp = date.split('-')
                 body = js_obj['body']
-                if collapse_week == 1 and dt.datetime(int(date_temp[0]), int(date_temp[1]), int(date_temp[2])).weekday() > 4:
-                    pass
+                if date >= timerange_start and date <= timerange_end:
+                    if collapse_week == 1 and dt.datetime(int(date_temp[0]), int(date_temp[1]), int(date_temp[2])).weekday() > 4:
+                        pass
+                    else:
+                        article_count += 1                
+                        for target in targets:
+                            if date not in output_dict_max[target].keys():
+                                output_dict_max[target][date] = []
+                            
+                            if date not in output_dict_avg[target].keys():
+                                output_dict_avg[target][date] = []
+
+                            if re.search(target, body, re.IGNORECASE):
+                                print('\t\tTarget found in article:', line_count, 'Article Number:', article_count, 'Target:', target, ' '*12, end='\r')
+                                body2 = nltk.tokenize.sent_tokenize(body)
+
+                                for i in range(len(body2)):     # for each sentence in the body
+                                    if re.search(target, body2[i], re.IGNORECASE):
+                                        cleaned = []
+                                        temp = nltk.tag.pos_tag(nltk.tokenize.word_tokenize(body2[i]))   # tokenize by word and tag with nltk tag
+
+                                        for token in temp:      # strip non-content context words
+                                            if token[0].lower() not in stopwords and token[0].lower() not in string.punctuation:
+                                                cleaned.append(token)
+
+                                        lemmatized = []
+                                        for word in cleaned:    # for each word in the processed sentence
+                                            check = nltk.WordNetLemmatizer().lemmatize(word[0], get_pos_tag(word[1][0].upper()))
+                                            lemmatized.append(check)
+
+                                        valence_max = 0
+                                        valence_avg = [0,0]
+                                        for lemma in lemmatized:
+                                            for key in valence_ratings.keys():
+                                                if lemma == key:
+                                                    valence_avg[0] += valence_ratings[key]
+                                                    valence_avg[1] += 1
+                                                    if abs(valence_ratings[key]) > abs(valence_max):
+                                                        valence_max = valence_ratings[key]
+                                        if valence_max != 0:
+                                            output_dict_max[target][date].append(valence_max)
+                                        if valence_avg[1] != 0:
+                                            output_dict_avg[target][date].append(valence_avg[0]/valence_avg[1])
+                            else: 
+                                output_dict_max[target][date].append(np.nan)
+                                output_dict_avg[target][date].append(np.nan)
                 else:
-                    article_count += 1                
-                    for target in targets:
-                        if date not in output_dict_max[target].keys():
-                            output_dict_max[target][date] = []
-                        
-                        if date not in output_dict_avg[target].keys():
-                            output_dict_avg[target][date] = []
-
-                        if re.search(target, body, re.IGNORECASE):
-                            print('\t\tTarget found in article:', line_count, 'Article Number:', article_count, 'Target:', target, ' '*12, end='\r')
-                            body2 = nltk.tokenize.sent_tokenize(body)
-
-                            for i in range(len(body2)):     # for each sentence in the body
-                                if re.search(target, body2[i], re.IGNORECASE):
-                                    cleaned = []
-                                    temp = nltk.tag.pos_tag(nltk.tokenize.word_tokenize(body2[i]))   # tokenize by word and tag with nltk tag
-
-                                    for token in temp:      # strip non-content context words
-                                        if token[0].lower() not in stopwords and token[0].lower() not in string.punctuation:
-                                            cleaned.append(token)
-
-                                    lemmatized = []
-                                    for word in cleaned:    # for each word in the processed sentence
-                                        check = nltk.WordNetLemmatizer().lemmatize(word[0], get_pos_tag(word[1][0].upper()))
-                                        lemmatized.append(check)
-
-                                    valence_max = 0
-                                    valence_avg = [0,0]
-                                    for lemma in lemmatized:
-                                        for key in valence_ratings.keys():
-                                            if lemma == key:
-                                                valence_avg[0] += valence_ratings[key]
-                                                valence_avg[1] += 1
-                                                if abs(valence_ratings[key]) > abs(valence_max):
-                                                    valence_max = valence_ratings[key]
-                                    if valence_max != 0:
-                                        output_dict_max[target][date].append(valence_max)
-                                    if valence_avg[1] != 0:
-                                        output_dict_avg[target][date].append(valence_avg[0]/valence_avg[1])
-                        else: 
-                            output_dict_max[target][date].append(np.nan)
-                            output_dict_avg[target][date].append(np.nan)
+                    pass
     
     processed_data = [targets, output_dict_max, output_dict_avg]
     output.write(str(processed_data))
@@ -544,7 +564,7 @@ def main(input_data_filename: str, target_words_filename: str, sourcename: str, 
     if trace == 0:
         print("\n\t\t{:25} {}".format('TIME POPULATION START:', tt.ctime()))
         time_pop_start = tt.time()
-        processed_data = populate_data(input_data_filename, target_words_filename, sourcename)
+        processed_data = populate_data(input_data_filename, target_words_filename, sourcename, '2020-03-01', '2020-04-21')
         print("\n\t\t{:25} {:.2f}s".format('TIME POPULATION RUNTIME:', runtime(time_pop_start)))
 
         print("\n\t\t{:25} {}".format('DATAFRAME SETUP START:', tt.ctime()))
@@ -552,22 +572,22 @@ def main(input_data_filename: str, target_words_filename: str, sourcename: str, 
         dataframe = dataframe_setup(processed_data, sourcename)
         print("\t\t{:25} {:.2f}μs".format('DATAFRAME SETUP RUNTIME:', 1000000*runtime(dataframe_start)))
         
-        print("\n\t\t{:25} {}".format('CSV OUTPUT START:', tt.ctime()))
-        csv_start = tt.time()
-        csv_output(dataframe, sourcename)
-        print("\t\t{:25} {:.2f}μs".format('CSV OUTPUT RUNTIME:', 1000000*runtime(csv_start)))
+        # print("\n\t\t{:25} {}".format('CSV OUTPUT START:', tt.ctime()))
+        # csv_start = tt.time()
+        # csv_output(dataframe, sourcename)
+        # print("\t\t{:25} {:.2f}μs".format('CSV OUTPUT RUNTIME:', 1000000*runtime(csv_start)))
 
-        print("\n\t\tGRAPHING START: ", tt.ctime())
-        graph_start = tt.time()
-        graphing_type(dataframe, target_words_filename, sourcename)
-        print("\t\tGRAPHING RUNTIME: {:.2f}".format(runtime(graph_start)))
+        # print("\n\t\tGRAPHING START: ", tt.ctime())
+        # graph_start = tt.time()
+        # graphing_type(dataframe, target_words_filename, sourcename)
+        # print("\t\tGRAPHING RUNTIME: {:.2f}".format(runtime(graph_start)))
 
         print("\n\t\tTOTAL TRACE RUNTIME: {:.2f}".format(runtime(main_start)))
     
     elif trace == 1:
         print("\t\t{:25} {}".format('TIME POPULATION START:', tt.ctime()))
         time_pop_start = tt.time()
-        processed_data = populate_data(input_data_filename, target_words_filename, sourcename)
+        processed_data = populate_data(input_data_filename, target_words_filename, sourcename, '2020-03-01', '2020-04-21')
         print("\n\t\t{:25} {:.2f}s".format('TIME POPULATION RUNTIME:', runtime(time_pop_start)))
 
         print("\n\t\t{:25} {}".format('DATAFRAME SETUP START:', tt.ctime()))
@@ -587,7 +607,7 @@ def main(input_data_filename: str, target_words_filename: str, sourcename: str, 
 
         print("\n\t\t{:25} {}".format('SENTIMENT DATA START:', tt.ctime()))
         sent_pop_start = tt.time()
-        processed_sent_data = populate_data_sentiment(input_data_filename, target_words_filename, sourcename, valences)
+        processed_sent_data = populate_data_sentiment(input_data_filename, target_words_filename, sourcename, valences, '2020-03-01', '2020-04-21')
         print("\n\t\t{:25} {:.2f}s".format('SENTIMENT DATA RUNTIME:', runtime(sent_pop_start)))
 
         print("\n\t\t{:25} {}".format('SENTI FRAME START:', tt.ctime()))
@@ -605,4 +625,4 @@ def main(input_data_filename: str, target_words_filename: str, sourcename: str, 
     return None
 
 
-# main('aylien_data.jsonl', 'cluster2_quarantine_canada.txt', 'canada.ca', 1)
+# main('aylien_data_july.jsonl', 'cluster2_quarantine_canada.txt', 'globalnews.ca', 1)
